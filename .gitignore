@@ -25,4 +25,5 @@
 *.VC.db
 /import.log
 /test-results.xml
+/playmode-results.xml
 /CodeCoverage/

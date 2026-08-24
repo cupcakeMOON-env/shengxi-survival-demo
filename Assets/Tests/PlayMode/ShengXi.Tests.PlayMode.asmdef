@@ -1,0 +1,23 @@
+{
+  "name": "ShengXi.Tests.PlayMode",
+  "rootNamespace": "ShengXi.Tests.PlayMode",
+  "references": [
+    "ShengXi.Simulation",
+    "ShengXi.Game",
+    "UnityEngine.TestRunner",
+    "UnityEditor.TestRunner"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": true,
+  "precompiledReferences": [
+    "nunit.framework.dll"
+  ],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

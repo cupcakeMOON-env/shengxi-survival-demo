@@ -1,0 +1,16 @@
+{
+  "name": "ShengXi.Game",
+  "rootNamespace": "ShengXi",
+  "references": [
+    "ShengXi.Simulation"
+  ],
+  "includePlatforms": [],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

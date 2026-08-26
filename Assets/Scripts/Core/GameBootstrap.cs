@@ -38,6 +38,7 @@ namespace ShengXi.Core
 
             var buildMode = root.AddComponent<BuildModeController>();
             var input = root.AddComponent<TileClickInput>();
+            var basePlacement = root.AddComponent<BasePlacementController>();
             root.AddComponent<ResourceBar>();
             root.AddComponent<BuildMenu>();
             root.AddComponent<EnemyView>();
@@ -64,6 +65,7 @@ namespace ShengXi.Core
 
             input.Initialize(cam, buildMode);
             buildMode.Initialize(cam);
+            basePlacement.Initialize(cam);
         }
     }
 }

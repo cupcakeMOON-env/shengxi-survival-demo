@@ -22,15 +22,24 @@ namespace ShengXi.Tests.PlayMode
         {
             yield return null;
             yield return null;
+            GameLoop.Instance.NewGame();
+            yield return null;
 
             Assert.That(GameLoop.Instance, Is.Not.Null, "GameBootstrap 应创建 GameLoop");
             var loop = GameLoop.Instance;
             Assert.That(loop.Map, Is.Not.Null);
             Assert.That(loop.Map.Width, Is.EqualTo(30));
             Assert.That(loop.Map.Height, Is.EqualTo(30));
+            Assert.That(loop.Cycle.IsDay, Is.True);
+            Assert.That(loop.IsChoosingBase, Is.True, "开局应处于选择据点阶段");
+
+            var baseSpot = FindBuildableTile(loop.Map);
+            Assert.That(baseSpot.HasValue, Is.True, "应存在可放置据点的格子");
+            Assert.That(loop.ConfirmBase(baseSpot.Value), Is.True, "确认据点应成功");
+            Assert.That(loop.IsChoosingBase, Is.False);
             Assert.That(loop.Base, Is.Not.Null);
             Assert.That(loop.Base.CurrentHp, Is.GreaterThan(0));
-            Assert.That(loop.Cycle.IsDay, Is.True);
+            Assert.That(loop.Map.GetTile(baseSpot.Value).Building, Is.EqualTo(BuildingType.Base), "据点应落到地图上");
 
             var cameras = Object.FindObjectsByType<Camera>();
             Assert.That(cameras.Length, Is.EqualTo(1), "应只有一个相机");
@@ -63,8 +72,11 @@ namespace ShengXi.Tests.PlayMode
         public IEnumerator DayNightLoop_CompletesFirstNight()
         {
             yield return null;
+            GameLoop.Instance.NewGame();
+            yield return null;
             var loop = GameLoop.Instance;
             Assert.That(loop.Cycle.IsDay, Is.True);
+            Assert.That(ConfirmBaseAtWalkable(loop), Is.True, "应能放置据点");
 
             loop.EndDay();
             Assert.That(loop.Cycle.IsNight, Is.True, "结束白天后应进入夜晚");
@@ -87,6 +99,8 @@ namespace ShengXi.Tests.PlayMode
         public IEnumerator SaveLoad_RoundTrip_AtRuntime()
         {
             yield return null;
+            GameLoop.Instance.NewGame();
+            yield return null;
             const string slot = "smoke_test.json";
             var path = Path.Combine(Application.persistentDataPath, slot);
 
@@ -94,6 +108,7 @@ namespace ShengXi.Tests.PlayMode
             {
                 var loop = GameLoop.Instance;
                 Assert.That(loop.Cycle.IsDay, Is.True, "存档测试应从白天开始");
+                Assert.That(ConfirmBaseAtWalkable(loop), Is.True, "应能放置据点");
 
                 var forest = FindResourceTile(loop.Map, TerrainType.Forest);
                 var stone = FindResourceTile(loop.Map, TerrainType.Stone);
@@ -174,6 +189,12 @@ namespace ShengXi.Tests.PlayMode
             }
 
             return null;
+        }
+
+        private static bool ConfirmBaseAtWalkable(GameLoop loop)
+        {
+            var spot = FindBuildableTile(loop.Map);
+            return spot.HasValue && loop.ConfirmBase(spot.Value);
         }
     }
 }

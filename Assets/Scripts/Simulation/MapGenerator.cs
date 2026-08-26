@@ -60,8 +60,6 @@ namespace ShengXi.Simulation
                 FillCircle(map, center, rng.Next(1, 2), TerrainType.Bush, rng.Next(15, 31));
             }
 
-            // 据点中央清出一块空地
-            FillCircle(map, new GridPos(width / 2, height / 2), 2, TerrainType.Grass, 0);
             return map;
         }
 

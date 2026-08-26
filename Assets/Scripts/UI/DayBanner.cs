@@ -82,7 +82,11 @@ namespace ShengXi.UI
             }
 
             var phase = loop.Cycle.IsDay ? "白天" : "夜晚";
-            _statusText.text = $"第 {loop.Cycle.Day} 天 · {phase} · 据点 {loop.Base.CurrentHp}/{loop.Base.MaxHp} · 敌人 {loop.Enemies.Count}";
+            var baseInfo = loop.Base != null
+                ? $"据点 {loop.Base.CurrentHp}/{loop.Base.MaxHp}"
+                : "据点 未放置";
+            var hint = loop.IsChoosingBase ? " · 点地图选位置，再按「确认据点」" : "";
+            _statusText.text = $"第 {loop.Cycle.Day} 天 · {phase} · {baseInfo} · 敌人 {loop.Enemies.Count}{hint}";
         }
 
         private static Text CreateText(Transform parent, string name, int fontSize)

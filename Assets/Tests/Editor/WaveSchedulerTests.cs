@@ -45,5 +45,41 @@ namespace ShengXi.Tests.Editor
             Assert.That(enemies[0].Id, Is.EqualTo(0));
             Assert.That(enemies[1].Id, Is.EqualTo(1));
         }
+
+        [Test]
+        public void SpawnPointsFor_ReturnsWalkableEdgePoints()
+        {
+            var map = MapGenerator.CreateRandomMap(30, 30, 5);
+            var basePos = new GridPos(15, 15);
+
+            var points = WaveScheduler.SpawnPointsFor(map, basePos);
+
+            Assert.That(points.Count, Is.EqualTo(4));
+            Assert.That(points[0].X, Is.EqualTo(0), "左边缘");
+            Assert.That(points[1].X, Is.EqualTo(29), "右边缘");
+            Assert.That(points[2].Y, Is.EqualTo(0), "下边缘");
+            Assert.That(points[3].Y, Is.EqualTo(29), "上边缘");
+
+            foreach (var point in points)
+            {
+                Assert.That(map.GetTile(point).IsWalkable, Is.True, $"刷怪点应可行走：{point}");
+                Assert.That(map.GetTile(point).Building, Is.EqualTo(BuildingType.None), $"刷怪点应无建筑：{point}");
+            }
+        }
+
+        [Test]
+        public void SpawnPointsFor_HandlesNonWalkablePreferredTile()
+        {
+            // 人为把左边缘正对据点的格子设为水，验证会向两侧找到可行走点
+            var map = new GridMap(10, 10);
+            map.SetTerrain(new GridPos(0, 5), TerrainType.Water, 0);
+            map.SetTerrain(new GridPos(1, 5), TerrainType.Water, 0);
+            map.SetTerrain(new GridPos(0, 6), TerrainType.Water, 0);
+
+            var points = WaveScheduler.SpawnPointsFor(map, new GridPos(5, 5));
+
+            Assert.That(points[0].X, Is.EqualTo(0));
+            Assert.That(map.GetTile(points[0]).IsWalkable, Is.True, "应避开水面");
+        }
     }
 }

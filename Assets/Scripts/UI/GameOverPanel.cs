@@ -50,12 +50,16 @@ namespace ShengXi.UI
         private void OnEnable()
         {
             GameEvents.GameOver += OnGameOver;
+            GameEvents.MapInitialized += OnMapInitialized;
         }
 
         private void OnDisable()
         {
             GameEvents.GameOver -= OnGameOver;
+            GameEvents.MapInitialized -= OnMapInitialized;
         }
+
+        private void OnMapInitialized(GridMap map) => _panel.SetActive(false);
 
         private void OnGameOver(bool victory, int day)
         {

@@ -21,6 +21,40 @@ namespace ShengXi.Core
         public bool GameOver { get; private set; }
         public bool Victory { get; private set; }
         public int Seed { get; private set; }
+        private bool _baseConfirmed;
+
+        /// <summary>开局是否处于「选择据点位置」阶段。</summary>
+        public bool IsChoosingBase => !_baseConfirmed;
+
+        /// <summary>
+        /// 开新局：原地重置全部状态（不重载场景），并通过事件让所有视图重建。
+        /// 供「重新开始」与 PlayMode 测试复用。
+        /// </summary>
+        public void NewGame()
+        {
+            Seed = Random.Range(1, int.MaxValue);
+            Map = MapGenerator.CreateRandomMap(MapGenerator.DefaultWidth, MapGenerator.DefaultHeight, Seed);
+            Pool = new ResourcePool();
+            ActionPoints = new ActionPointSystem(10);
+            Cycle = new DayCycle();
+            Base = null;
+            Enemies = new List<Enemy>();
+            GameOver = false;
+            Victory = false;
+            _baseConfirmed = false;
+            _nextEnemyId = 0;
+            _collectorTimer = 0f;
+            _combatTimer = 0f;
+
+            GameEvents.RaiseMapInitialized(Map);
+            GameEvents.RaiseResourceChanged(ResourceType.Wood, 0);
+            GameEvents.RaiseResourceChanged(ResourceType.Stone, 0);
+            GameEvents.RaiseResourceChanged(ResourceType.Food, 0);
+            GameEvents.RaiseActionPointsChanged(ActionPoints.Current, ActionPoints.MaxPerDay);
+            GameEvents.RaiseDayChanged(Cycle.Day);
+            GameEvents.RaisePhaseChanged(Cycle.Phase);
+            GameEvents.RaiseEnemyCountChanged(0);
+        }
 
         private const float CollectorTickInterval = 1f;
         private float _collectorTimer;
@@ -36,18 +70,40 @@ namespace ShengXi.Core
             Pool = new ResourcePool();
             ActionPoints = new ActionPointSystem(10);
             Cycle = new DayCycle();
-            Base = new Base(new GridPos(MapGenerator.DefaultWidth / 2, MapGenerator.DefaultHeight / 2), 20);
-            Map.Place(BuildingType.Base, Base.Position);
             GameEvents.RaiseMapInitialized(Map);
-            GameEvents.RaiseBaseHpChanged(Base.CurrentHp, Base.MaxHp);
             GameEvents.RaiseDayChanged(Cycle.Day);
             GameEvents.RaisePhaseChanged(Cycle.Phase);
             GameEvents.RaiseActionPointsChanged(ActionPoints.Current, ActionPoints.MaxPerDay);
         }
 
+        /// <summary>
+        /// 确认据点位置：校验 → 清地基 → 放置 → 进入正式游戏。
+        /// </summary>
+        public bool ConfirmBase(GridPos pos)
+        {
+            if (_baseConfirmed || !BasePlacementValidator.CanPlace(Map, pos))
+            {
+                return false;
+            }
+
+            Map.SetTerrain(pos, TerrainType.Grass, 0);
+            Map.Place(BuildingType.Base, pos);
+            Base = new Base(pos, 20);
+            _baseConfirmed = true;
+            GameEvents.RaiseBuildingPlaced(pos, BuildingType.Base);
+            GameEvents.RaiseBaseHpChanged(Base.CurrentHp, Base.MaxHp);
+            return true;
+        }
+
         /// <summary>存档：打包当前状态写入文件。</summary>
         public void SaveGame(string slot = "shengxi_save.json")
         {
+            if (!_baseConfirmed)
+            {
+                Debug.LogWarning("[Save] 还未放置据点，无法存档");
+                return;
+            }
+
             var data = SaveSerializer.Build(Map, Pool, ActionPoints, Cycle, Base, Enemies, Seed);
             SaveMigrator.Upgrade(data);
             SaveService.Write(data, slot);
@@ -72,6 +128,7 @@ namespace ShengXi.Core
             Cycle = SaveSerializer.RebuildCycle(data);
             Base = SaveSerializer.RebuildBase(data);
             Enemies = SaveSerializer.RebuildEnemies(data);
+            _baseConfirmed = true;
             GameOver = false;
             Victory = false;
             _nextEnemyId = data.enemies != null && data.enemies.Length > 0 ? data.enemies.Length + 1 : 1;
@@ -99,7 +156,7 @@ namespace ShengXi.Core
         /// </summary>
         public void EndDay()
         {
-            if (GameOver || !Cycle.IsDay)
+            if (GameOver || !_baseConfirmed || !Cycle.IsDay)
             {
                 return;
             }
@@ -109,7 +166,8 @@ namespace ShengXi.Core
                 return;
             }
 
-            var wave = WaveScheduler.SpawnWave(Map, Cycle.Day, _nextEnemyId, WaveScheduler.DefaultSpawnPoints);
+            var spawnPoints = WaveScheduler.SpawnPointsFor(Map, Base.Position);
+            var wave = WaveScheduler.SpawnWave(Map, Cycle.Day, _nextEnemyId, spawnPoints);
             _nextEnemyId += wave.Count;
             foreach (var enemy in wave)
             {

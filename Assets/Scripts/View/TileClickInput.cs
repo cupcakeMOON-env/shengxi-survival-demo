@@ -58,6 +58,11 @@ namespace ShengXi.View
                 return;
             }
 
+            if (GameLoop.Instance.IsChoosingBase)
+            {
+                return;
+            }
+
             if (_camera == null)
             {
                 _camera = Camera.main;

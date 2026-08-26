@@ -56,16 +56,6 @@ namespace ShengXi.Tests.Editor
         }
 
         [Test]
-        public void Center_IsWalkableGrass()
-        {
-            var map = MapGenerator.CreateRandomMap(30, 30, 7);
-            var center = new GridPos(15, 15);
-
-            Assert.That(map.GetTile(center).Terrain, Is.EqualTo(TerrainType.Grass));
-            Assert.That(map.GetTile(center).IsWalkable, Is.True);
-        }
-
-        [Test]
         public void RandomMap_HasResources()
         {
             var map = MapGenerator.CreateRandomMap(30, 30, 42);

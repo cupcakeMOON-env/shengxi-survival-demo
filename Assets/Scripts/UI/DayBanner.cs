@@ -85,7 +85,7 @@ namespace ShengXi.UI
             var baseInfo = loop.Base != null
                 ? $"据点 {loop.Base.CurrentHp}/{loop.Base.MaxHp}"
                 : "据点 未放置";
-            var hint = loop.IsChoosingBase ? " · 点地图选位置，再按「确认据点」" : "";
+            var hint = loop.IsChoosingBase ? " · 左键点击地图放置据点" : "";
             _statusText.text = $"第 {loop.Cycle.Day} 天 · {phase} · {baseInfo} · 敌人 {loop.Enemies.Count}{hint}";
         }
 

@@ -1,12 +1,13 @@
 using ShengXi.Core;
 using ShengXi.Simulation;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 namespace ShengXi.View
 {
     /// <summary>
     /// 开局据点选址：跟随鼠标显示金色（可放）/红色（不可放）预览，
-    /// 当前悬停的格子由 Hovered 暴露给「确认据点」按钮。
+    /// 左键点击可放置的格子直接落定据点（不再需要确认按钮）。
     /// </summary>
     public class BasePlacementController : MonoBehaviour
     {
@@ -46,6 +47,13 @@ namespace ShengXi.View
             _ghost.color = canPlace
                 ? new Color(0.95f, 0.82f, 0.30f, 0.55f)
                 : new Color(1f, 0f, 0f, 0.45f);
+
+            if (canPlace &&
+                Input.GetMouseButtonDown(0) &&
+                (EventSystem.current == null || !EventSystem.current.IsPointerOverGameObject()))
+            {
+                loop.ConfirmBase(pos);
+            }
         }
 
         private void CreateGhost()

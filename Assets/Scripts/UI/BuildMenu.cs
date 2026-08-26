@@ -31,19 +31,6 @@ namespace ShengXi.UI
             rt.anchoredPosition = new Vector2(0f, 12f);
 
             var x = 0f;
-            x = CreateButton(barRoot.transform, x, "确认据点", () =>
-            {
-                if (GameLoop.Instance == null || !GameLoop.Instance.IsChoosingBase)
-                {
-                    return;
-                }
-
-                var controller = Object.FindAnyObjectByType<BasePlacementController>();
-                if (controller != null && controller.Hovered.HasValue)
-                {
-                    GameLoop.Instance.ConfirmBase(controller.Hovered.Value);
-                }
-            });
 
             foreach (var def in BuildingCatalog.All)
             {

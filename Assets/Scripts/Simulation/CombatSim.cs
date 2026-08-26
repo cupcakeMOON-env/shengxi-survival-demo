@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace ShengXi.Simulation
@@ -8,9 +9,6 @@ namespace ShengXi.Simulation
     /// </summary>
     public static class CombatSim
     {
-        public const int TowerRange = 3;
-        public const int TowerDamage = 1;
-
         public static void Tick(GridMap map, Base baseDefense, List<Enemy> enemies)
         {
             if (map == null || baseDefense == null || enemies == null)
@@ -19,18 +17,22 @@ namespace ShengXi.Simulation
             }
 
             // 1. 箭塔攻击
-            foreach (var towerPos in map.FindBuildingPositions(BuildingType.ArrowTower))
+            var towerDef = BuildingCatalog.Get(BuildingType.ArrowTower);
+            if (towerDef != null && towerDef.Range > 0 && towerDef.Damage > 0)
             {
-                var target = FindNearestEnemy(towerPos, enemies, TowerRange);
-                if (target == null)
+                foreach (var towerPos in map.FindBuildingPositions(BuildingType.ArrowTower))
                 {
-                    continue;
-                }
+                    var target = FindNearestEnemy(towerPos, enemies, towerDef.Range);
+                    if (target == null)
+                    {
+                        continue;
+                    }
 
-                target.HP -= TowerDamage;
-                if (target.IsDead)
-                {
-                    GameEvents.RaiseEnemyDied(target);
+                    target.HP -= towerDef.Damage;
+                    if (target.IsDead)
+                    {
+                        GameEvents.RaiseEnemyDied(target);
+                    }
                 }
             }
 
@@ -63,7 +65,7 @@ namespace ShengXi.Simulation
         private static Enemy FindNearestEnemy(GridPos towerPos, List<Enemy> enemies, int range)
         {
             Enemy nearest = null;
-            var bestDistanceSq = int.MaxValue;
+            var bestDistance = int.MaxValue;
 
             foreach (var enemy in enemies)
             {
@@ -72,12 +74,13 @@ namespace ShengXi.Simulation
                     continue;
                 }
 
-                var dx = enemy.Position.X - towerPos.X;
-                var dy = enemy.Position.Y - towerPos.Y;
-                var distSq = dx * dx + dy * dy;
-                if (distSq <= range * range && distSq < bestDistanceSq)
+                // 曼哈顿距离：与敌人四方向寻路的步数一致（|dx|+|dy|）
+                var dx = Math.Abs(enemy.Position.X - towerPos.X);
+                var dy = Math.Abs(enemy.Position.Y - towerPos.Y);
+                var distance = dx + dy;
+                if (distance <= range && distance < bestDistance)
                 {
-                    bestDistanceSq = distSq;
+                    bestDistance = distance;
                     nearest = enemy;
                 }
             }

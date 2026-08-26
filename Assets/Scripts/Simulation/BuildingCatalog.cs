@@ -44,6 +44,8 @@ namespace ShengXi.Simulation
                 WoodCost = 15,
                 StoneCost = 10,
                 ActionPointCost = 3,
+                Range = 3,
+                Damage = 1,
                 Description = "自动攻击敌人（M3 生效）",
             },
             new BuildingDef

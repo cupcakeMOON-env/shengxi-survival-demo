@@ -13,6 +13,8 @@ namespace ShengXi.Simulation
         public int FoodCost;
         public int ActionPointCost;
         public int CapacityBonus;          // 仓库：提升资源容量上限
+        public int Range;                  // 攻击类建筑：射程（曼哈顿距离，单位=格）
+        public int Damage;                 // 攻击类建筑：每 tick 伤害
         public bool RequiresResourceTile;  // 采集站：必须建在有剩余资源的资源格上
         public string Description;
     }

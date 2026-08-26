@@ -78,5 +78,30 @@ namespace ShengXi.Tests.Editor
             CombatSim.Tick(map, baseDefense, enemies);
             Assert.That(enemies.Count, Is.Zero, "第二 tick 被击杀");
         }
+
+        [Test]
+        public void ManhattanRange_HitsEnemyThreeStepsAway()
+        {
+            var (map, baseDefense) = Setup();
+            map.Place(BuildingType.ArrowTower, new GridPos(6, 5));
+            var enemies = new List<Enemy> { new Enemy(1, new GridPos(8, 6), 5, 1) };
+
+            CombatSim.Tick(map, baseDefense, enemies);
+
+            Assert.That(enemies[0].HP, Is.EqualTo(4), "曼哈顿距离 |2|+|1|=3 应命中");
+        }
+
+        [Test]
+        public void ManhattanRange_ExcludesEnemyFourStepsDiagonal()
+        {
+            var (map, baseDefense) = Setup();
+            map.Place(BuildingType.ArrowTower, new GridPos(6, 5));
+            // |2|+|2|=4 > 3；若用旧的欧氏距离约 2.83 会命中，曼哈顿规则下不应命中
+            var enemies = new List<Enemy> { new Enemy(1, new GridPos(8, 7), 5, 1) };
+
+            CombatSim.Tick(map, baseDefense, enemies);
+
+            Assert.That(enemies[0].HP, Is.EqualTo(5), "曼哈顿距离 4 不应命中");
+        }
     }
 }

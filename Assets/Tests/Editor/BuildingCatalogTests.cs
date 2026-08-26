@@ -34,5 +34,16 @@ namespace ShengXi.Tests.Editor
             Assert.That(BuildingCatalog.Get(BuildingType.Collector).RequiresResourceTile, Is.True);
             Assert.That(BuildingCatalog.Get(BuildingType.ArrowTower), Is.Not.Null);
         }
+
+        [Test]
+        public void ArrowTower_HasDataDrivenRangeAndDamage()
+        {
+            var tower = BuildingCatalog.Get(BuildingType.ArrowTower);
+
+            Assert.That(tower.Range, Is.EqualTo(3));
+            Assert.That(tower.Damage, Is.EqualTo(1));
+            Assert.That(BuildingCatalog.Get(BuildingType.Warehouse).Range, Is.Zero);
+            Assert.That(BuildingCatalog.Get(BuildingType.Wall).Damage, Is.Zero);
+        }
     }
 }

@@ -166,6 +166,54 @@ namespace ShengXi.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator Demolish_Runtime_FreesTileAndRefreshesView()
+        {
+            yield return null;
+            GameLoop.Instance.NewGame();
+            yield return null;
+            var loop = GameLoop.Instance;
+            Assert.That(ConfirmBaseAtWalkable(loop), Is.True, "应能放置据点");
+
+            var buildSpot = FindBuildableTile(loop.Map);
+            Assert.That(buildSpot.HasValue, Is.True, "应有可建造位置");
+            var terrainRenderer = FindTileRenderer(buildSpot.Value);
+            Assert.That(terrainRenderer, Is.Not.Null, "建造前应能找到格子渲染物体");
+            var terrainColorBefore = terrainRenderer.color;
+
+            Assert.That(
+                BuildService.TryBuild(loop.Map, loop.Pool, loop.ActionPoints,
+                    BuildingCatalog.Get(BuildingType.Warehouse), buildSpot.Value),
+                Is.True,
+                "应能成功建造仓库");
+            Assert.That(loop.Pool.Capacity, Is.EqualTo(200), "仓库应提升容量");
+            yield return null;
+
+            var warehouseRenderer = FindTileRenderer(buildSpot.Value);
+            Assert.That(warehouseRenderer, Is.Not.Null, "应能找到仓库渲染物体");
+            Assert.That(
+                warehouseRenderer.color,
+                Is.EqualTo(new Color(0.62f, 0.45f, 0.28f)),
+                "仓库应显示棕色");
+
+            var woodBefore = loop.Pool.GetAmount(ResourceType.Wood);
+            Assert.That(
+                DemolishService.TryDemolish(loop.Map, loop.Pool, loop.ActionPoints, buildSpot.Value),
+                Is.True,
+                "应能拆除仓库");
+            Assert.That(loop.Map.GetTile(buildSpot.Value).Building, Is.EqualTo(BuildingType.None), "拆除后格子应空出");
+            Assert.That(loop.Pool.Capacity, Is.EqualTo(ResourcePool.DefaultCapacity), "容量应回落");
+            Assert.That(loop.Pool.GetAmount(ResourceType.Wood), Is.EqualTo(woodBefore + 5), "应返还一半木头");
+            yield return null;
+
+            var grassRenderer = FindTileRenderer(buildSpot.Value);
+            Assert.That(grassRenderer, Is.Not.Null);
+            Assert.That(
+                grassRenderer.color,
+                Is.EqualTo(terrainColorBefore),
+                "拆除后格子应恢复地形色（BuildingRemoved 事件接线）");
+        }
+
         private static GridPos? FindResourceTile(GridMap map, TerrainType terrain)
         {
             for (var x = 0; x < map.Width; x++)

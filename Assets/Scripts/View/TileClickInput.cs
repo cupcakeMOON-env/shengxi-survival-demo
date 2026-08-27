@@ -87,7 +87,16 @@ namespace ShengXi.View
                     pos);
                 Debug.Log($"[TileClickInput] 建造 {_buildMode.ActiveDef.Name} grid={pos} ok={built}");
             }
-            // 无建造模式时点击不做事：采集由采集站自动完成，不再支持手动点击采集
+            else if (_buildMode != null && _buildMode.IsDemolishing)
+            {
+                var demolished = DemolishService.TryDemolish(
+                    GameLoop.Instance.Map,
+                    GameLoop.Instance.Pool,
+                    GameLoop.Instance.ActionPoints,
+                    pos);
+                Debug.Log($"[TileClickInput] 拆除 grid={pos} ok={demolished}");
+            }
+            // 无建造/拆除模式时点击不做事：采集由采集站自动完成，不再支持手动点击采集
         }
     }
 }

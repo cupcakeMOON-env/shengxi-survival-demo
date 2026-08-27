@@ -16,10 +16,13 @@ namespace ShengXi.Simulation
     /// </summary>
     public class ResourcePool
     {
+        /// <summary>默认容量上限；仓库建筑可在其上叠加。</summary>
+        public const int DefaultCapacity = 100;
+
         private readonly int[] _amounts = new int[3];
 
         /// <summary>容量上限，默认 100；仓库建筑可提升（CapacityBonus）。</summary>
-        public int Capacity { get; set; } = 100;
+        public int Capacity { get; set; } = DefaultCapacity;
 
         public int GetAmount(ResourceType type) => _amounts[(int)type];
 
@@ -46,6 +49,28 @@ namespace ShengXi.Simulation
             _amounts[(int)type] -= amount;
             GameEvents.RaiseResourceChanged(type, _amounts[(int)type]);
             return true;
+        }
+
+        /// <summary>
+        /// 拆除仓库等建筑时降低容量上限；若当前资源超出新上限，按新上限截断并通知 UI。
+        /// </summary>
+        public void ReduceCapacity(int amount)
+        {
+            if (amount <= 0)
+            {
+                return;
+            }
+
+            Capacity = System.Math.Max(DefaultCapacity, Capacity - amount);
+            for (var i = 0; i < _amounts.Length; i++)
+            {
+                var before = _amounts[i];
+                _amounts[i] = System.Math.Min(before, Capacity);
+                if (_amounts[i] != before)
+                {
+                    GameEvents.RaiseResourceChanged((ResourceType)i, _amounts[i]);
+                }
+            }
         }
 
         /// <summary>读档恢复：直接设置数值，不发事件（由上层恢复完成后统一刷新）。</summary>

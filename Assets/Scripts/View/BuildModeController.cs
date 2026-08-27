@@ -5,8 +5,8 @@ using UnityEngine;
 namespace ShengXi.View
 {
     /// <summary>
-    /// 建造模式：持有当前选中的建筑定义，鼠标悬停时在目标格显示红/绿幽灵预览。
-    /// 绿色=可以建造，红色=不能（资源不足/行动点不足/位置非法）。
+    /// 建造/拆除模式：持有当前选中的建筑定义（或拆除标记），鼠标悬停时在目标格显示红/绿幽灵预览。
+    /// 绿色=可以建造/拆除，红色=不能（资源不足/行动点不足/位置非法/据点不可拆）。
     /// </summary>
     public class BuildModeController : MonoBehaviour
     {
@@ -15,6 +15,7 @@ namespace ShengXi.View
         private bool _ghostCreated;
 
         public BuildingDef ActiveDef { get; private set; }
+        public bool IsDemolishing { get; private set; }
 
         public void Initialize(Camera camera)
         {
@@ -24,22 +25,38 @@ namespace ShengXi.View
 
         public void SetActive(BuildingDef def)
         {
-            ActiveDef = def == ActiveDef ? null : def;
+            var toggled = def != null && def == ActiveDef ? null : def;
+            ActiveDef = toggled;
+            if (toggled != null)
+            {
+                IsDemolishing = false;
+            }
+        }
+
+        /// <summary>切换拆除模式：再次点击关闭，切换建造时自动退出。</summary>
+        public void SetDemolishActive()
+        {
+            IsDemolishing = !IsDemolishing;
+            if (IsDemolishing)
+            {
+                ActiveDef = null;
+            }
         }
 
         public void ClearActive()
         {
             ActiveDef = null;
+            IsDemolishing = false;
         }
 
         private void Update()
         {
-            if (ActiveDef == null ||
-                GameLoop.Instance == null ||
+            if (GameLoop.Instance == null ||
                 GameLoop.Instance.GameOver ||
                 !GameLoop.Instance.Cycle.IsDay ||
                 GameLoop.Instance.IsChoosingBase ||
-                _camera == null)
+                _camera == null ||
+                (ActiveDef == null && !IsDemolishing))
             {
                 if (_ghostCreated)
                 {
@@ -51,6 +68,26 @@ namespace ShengXi.View
 
             var world = _camera.ScreenToWorldPoint(Input.mousePosition);
             var pos = new GridPos(Mathf.FloorToInt(world.x), Mathf.FloorToInt(world.y));
+
+            if (IsDemolishing)
+            {
+                var tile = GameLoop.Instance.Map.GetTile(pos);
+                if (tile == null || tile.Building == BuildingType.None)
+                {
+                    _ghost.gameObject.SetActive(false);
+                    return;
+                }
+
+                _ghost.gameObject.SetActive(true);
+                _ghost.transform.position = new Vector3(pos.X, pos.Y, -0.5f);
+                _ghost.color = DemolishService.CanDemolish(
+                    GameLoop.Instance.Map,
+                    GameLoop.Instance.ActionPoints,
+                    pos)
+                    ? new Color(0f, 1f, 0f, 0.45f)
+                    : new Color(1f, 0f, 0f, 0.45f);
+                return;
+            }
 
             _ghost.gameObject.SetActive(true);
             _ghost.transform.position = new Vector3(pos.X, pos.Y, -0.5f);

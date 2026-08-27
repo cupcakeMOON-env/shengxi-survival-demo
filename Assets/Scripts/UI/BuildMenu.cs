@@ -37,7 +37,7 @@ namespace ShengXi.UI
                 x = CreateButton(barRoot.transform, x, $"{def.Name}\n{FormatCost(def)}", () => _buildMode.SetActive(def));
             }
 
-            CreateButton(barRoot.transform, x, "拆除\n点1", () => _buildMode.SetDemolishActive());
+            CreateButton(barRoot.transform, x, "拆除", () => _buildMode.SetDemolishActive());
 
             CreateButton(barRoot.transform, x, "结束白天", () =>
             {

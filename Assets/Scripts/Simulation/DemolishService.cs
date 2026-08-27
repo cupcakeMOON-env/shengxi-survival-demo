@@ -1,18 +1,17 @@
 namespace ShengXi.Simulation
 {
     /// <summary>
-    /// 拆除服务：校验 → 扣行动点 → 返还一半造价 → 撤销建筑效果（如仓库容量）→ 清除格子 → 发事件。
+    /// 拆除服务：校验 → 返还一半造价 → 撤销建筑效果（如仓库容量）→ 清除格子 → 发事件。
     /// 纯 C#，可单测；GridMap.RemoveBuilding 是底层操作，这里补全资源 / 行动点 / 效果 / 事件闭环。
-    /// 拆除只能在白天进行（由上层 BuildModeController / TileClickInput 保证），据点不可拆除。
+    /// 拆除不消耗行动点（2026-08-28 调整）；只能在白天进行（由上层 BuildModeController / TileClickInput 保证），据点不可拆除。
     /// </summary>
     public static class DemolishService
     {
-        public const int ActionPointCost = 1;
         public const int RefundPercent = 50;
 
-        public static bool CanDemolish(GridMap map, ActionPointSystem ap, GridPos pos)
+        public static bool CanDemolish(GridMap map, GridPos pos)
         {
-            if (map == null || ap == null)
+            if (map == null)
             {
                 return false;
             }
@@ -23,19 +22,17 @@ namespace ShengXi.Simulation
                 return false;
             }
 
-            return ap.CanSpend(ActionPointCost);
+            return true;
         }
 
-        public static bool TryDemolish(GridMap map, ResourcePool pool, ActionPointSystem ap, GridPos pos)
+        public static bool TryDemolish(GridMap map, ResourcePool pool, GridPos pos)
         {
-            if (!CanDemolish(map, ap, pos))
+            if (pool == null || !CanDemolish(map, pos))
             {
                 return false;
             }
 
             var def = BuildingCatalog.Get(map.GetTile(pos).Building);
-
-            ap.Spend(ActionPointCost);
 
             if (def != null)
             {

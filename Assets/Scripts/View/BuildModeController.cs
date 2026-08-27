@@ -6,7 +6,7 @@ namespace ShengXi.View
 {
     /// <summary>
     /// 建造/拆除模式：持有当前选中的建筑定义（或拆除标记），鼠标悬停时在目标格显示红/绿幽灵预览。
-    /// 绿色=可以建造/拆除，红色=不能（资源不足/行动点不足/位置非法/据点不可拆）。
+    /// 绿色=可以建造/拆除，红色=不能（建造：资源不足/行动点不足/位置非法；拆除：据点不可拆）。
     /// </summary>
     public class BuildModeController : MonoBehaviour
     {
@@ -80,10 +80,7 @@ namespace ShengXi.View
 
                 _ghost.gameObject.SetActive(true);
                 _ghost.transform.position = new Vector3(pos.X, pos.Y, -0.5f);
-                _ghost.color = DemolishService.CanDemolish(
-                    GameLoop.Instance.Map,
-                    GameLoop.Instance.ActionPoints,
-                    pos)
+                _ghost.color = DemolishService.CanDemolish(GameLoop.Instance.Map, pos)
                     ? new Color(0f, 1f, 0f, 0.45f)
                     : new Color(1f, 0f, 0f, 0.45f);
                 return;

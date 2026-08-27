@@ -198,7 +198,7 @@ namespace ShengXi.Tests.PlayMode
 
             var woodBefore = loop.Pool.GetAmount(ResourceType.Wood);
             Assert.That(
-                DemolishService.TryDemolish(loop.Map, loop.Pool, loop.ActionPoints, buildSpot.Value),
+                DemolishService.TryDemolish(loop.Map, loop.Pool, buildSpot.Value),
                 Is.True,
                 "应能拆除仓库");
             Assert.That(loop.Map.GetTile(buildSpot.Value).Building, Is.EqualTo(BuildingType.None), "拆除后格子应空出");

@@ -19,7 +19,7 @@ namespace ShengXi.Tests.Editor
         {
             var (map, pool, ap) = Setup();
 
-            var ok = DemolishService.TryDemolish(map, pool, ap, new GridPos(0, 0));
+            var ok = DemolishService.TryDemolish(map, pool, new GridPos(0, 0));
 
             Assert.That(ok, Is.False);
             Assert.That(ap.Current, Is.EqualTo(10), "失败不应扣行动点");
@@ -28,38 +28,39 @@ namespace ShengXi.Tests.Editor
         [Test]
         public void Demolish_OutOfBounds_Fails()
         {
-            var (map, pool, ap) = Setup();
+            var (map, pool, _) = Setup();
 
-            Assert.That(DemolishService.CanDemolish(map, ap, new GridPos(-1, -1)), Is.False);
-            Assert.That(DemolishService.TryDemolish(map, pool, ap, new GridPos(99, 99)), Is.False);
+            Assert.That(DemolishService.CanDemolish(map, new GridPos(-1, -1)), Is.False);
+            Assert.That(DemolishService.TryDemolish(map, pool, new GridPos(99, 99)), Is.False);
         }
 
         [Test]
         public void Demolish_BaseTile_Fails()
         {
-            var (map, pool, ap) = Setup();
+            var (map, pool, _) = Setup();
             map.Place(BuildingType.Base, new GridPos(1, 1));
 
-            Assert.That(DemolishService.CanDemolish(map, ap, new GridPos(1, 1)), Is.False);
-            Assert.That(DemolishService.TryDemolish(map, pool, ap, new GridPos(1, 1)), Is.False);
+            Assert.That(DemolishService.CanDemolish(map, new GridPos(1, 1)), Is.False);
+            Assert.That(DemolishService.TryDemolish(map, pool, new GridPos(1, 1)), Is.False);
             Assert.That(map.GetTile(new GridPos(1, 1)).Building, Is.EqualTo(BuildingType.Base));
         }
 
         [Test]
-        public void Demolish_WithoutActionPoints_Fails()
+        public void Demolish_WorksWithZeroActionPoints()
         {
             var (map, pool, ap) = Setup();
             var pos = new GridPos(2, 2);
             map.Place(BuildingType.Wall, pos);
             ap.Spend(10);
 
-            Assert.That(DemolishService.CanDemolish(map, ap, pos), Is.False);
-            Assert.That(DemolishService.TryDemolish(map, pool, ap, pos), Is.False);
-            Assert.That(map.GetTile(pos).Building, Is.EqualTo(BuildingType.Wall));
+            Assert.That(DemolishService.CanDemolish(map, pos), Is.True, "拆除不应依赖行动点");
+            Assert.That(DemolishService.TryDemolish(map, pool, pos), Is.True);
+            Assert.That(map.GetTile(pos).Building, Is.EqualTo(BuildingType.None));
+            Assert.That(ap.Current, Is.Zero, "拆除不应扣行动点");
         }
 
         [Test]
-        public void Demolish_Wall_FreesTileRefundsHalfAndSpendsAp()
+        public void Demolish_Wall_FreesTileRefundsHalf()
         {
             var (map, pool, ap) = Setup();
             var pos = new GridPos(3, 3);
@@ -67,12 +68,12 @@ namespace ShengXi.Tests.Editor
             Assert.That(pool.GetAmount(ResourceType.Wood), Is.EqualTo(98));
             Assert.That(ap.Current, Is.EqualTo(9));
 
-            Assert.That(DemolishService.TryDemolish(map, pool, ap, pos), Is.True);
+            Assert.That(DemolishService.TryDemolish(map, pool, pos), Is.True);
 
             Assert.That(map.GetTile(pos).Building, Is.EqualTo(BuildingType.None));
             Assert.That(map.GetTile(pos).IsWalkable, Is.True, "拆除围墙后应恢复可通行");
             Assert.That(pool.GetAmount(ResourceType.Wood), Is.EqualTo(99), "围墙木2 应返还 50% = 1");
-            Assert.That(ap.Current, Is.EqualTo(8), "建造 1 点 + 拆除 1 点");
+            Assert.That(ap.Current, Is.EqualTo(9), "拆除不消耗行动点，只算建造的 1 点");
         }
 
         [Test]
@@ -85,7 +86,7 @@ namespace ShengXi.Tests.Editor
             var woodBefore = pool.GetAmount(ResourceType.Wood);
             var stoneBefore = pool.GetAmount(ResourceType.Stone);
 
-            Assert.That(DemolishService.TryDemolish(map, pool, ap, pos), Is.True);
+            Assert.That(DemolishService.TryDemolish(map, pool, pos), Is.True);
 
             Assert.That(map.GetTile(pos).Building, Is.EqualTo(BuildingType.None));
             Assert.That(pool.Capacity, Is.EqualTo(ResourcePool.DefaultCapacity));
@@ -102,7 +103,7 @@ namespace ShengXi.Tests.Editor
             pool.Add(ResourceType.Wood, 80); // 容量 200：90 + 80 → 170
             Assert.That(pool.GetAmount(ResourceType.Wood), Is.EqualTo(170));
 
-            Assert.That(DemolishService.TryDemolish(map, pool, ap, pos), Is.True);
+            Assert.That(DemolishService.TryDemolish(map, pool, pos), Is.True);
 
             Assert.That(pool.Capacity, Is.EqualTo(100));
             Assert.That(pool.GetAmount(ResourceType.Wood), Is.EqualTo(100), "超出新容量的资源应被截断");
@@ -119,7 +120,7 @@ namespace ShengXi.Tests.Editor
             Assert.That(pool.GetAmount(ResourceType.Wood), Is.EqualTo(96), "100-5 造价 + 1 采集");
             var resourceLeft = map.GetTile(forest).ResourceAmount;
 
-            Assert.That(DemolishService.TryDemolish(map, pool, ap, forest), Is.True);
+            Assert.That(DemolishService.TryDemolish(map, pool, forest), Is.True);
             var woodAfterDemolish = pool.GetAmount(ResourceType.Wood);
             CollectorSystem.Tick(map, pool);
 
@@ -139,7 +140,7 @@ namespace ShengXi.Tests.Editor
             GameEvents.BuildingRemoved += Handler;
             try
             {
-                Assert.That(DemolishService.TryDemolish(map, pool, ap, pos), Is.True);
+                Assert.That(DemolishService.TryDemolish(map, pool, pos), Is.True);
                 Assert.That(removed, Is.EqualTo(pos));
             }
             finally
@@ -153,11 +154,11 @@ namespace ShengXi.Tests.Editor
         [Test]
         public void Demolish_NullArguments_Fails()
         {
-            var (map, pool, ap) = Setup();
+            var (map, pool, _) = Setup();
 
-            Assert.That(DemolishService.TryDemolish(null, pool, ap, new GridPos(0, 0)), Is.False);
-            Assert.That(DemolishService.TryDemolish(map, pool, null, new GridPos(0, 0)), Is.False);
-            Assert.That(DemolishService.CanDemolish(null, ap, new GridPos(0, 0)), Is.False);
+            Assert.That(DemolishService.TryDemolish(null, pool, new GridPos(0, 0)), Is.False);
+            Assert.That(DemolishService.TryDemolish(map, null, new GridPos(0, 0)), Is.False);
+            Assert.That(DemolishService.CanDemolish(null, new GridPos(0, 0)), Is.False);
         }
     }
 }

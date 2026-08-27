@@ -92,7 +92,6 @@ namespace ShengXi.View
                 var demolished = DemolishService.TryDemolish(
                     GameLoop.Instance.Map,
                     GameLoop.Instance.Pool,
-                    GameLoop.Instance.ActionPoints,
                     pos);
                 Debug.Log($"[TileClickInput] 拆除 grid={pos} ok={demolished}");
             }

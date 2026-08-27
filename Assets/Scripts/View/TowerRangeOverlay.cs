@@ -67,7 +67,7 @@ namespace ShengXi.View
 
         private void Rebuild(GridPos center, int range)
         {
-            Clear();
+            DestroyOverlays();
             var map = GameLoop.Instance.Map;
 
             for (var dx = -range; dx <= range; dx++)
@@ -99,6 +99,13 @@ namespace ShengXi.View
 
         private void Clear()
         {
+            DestroyOverlays();
+            _lastHovered = null;
+            _lastContext = BuildingType.None;
+        }
+
+        private void DestroyOverlays()
+        {
             if (_overlays.Count > 0)
             {
                 foreach (var sr in _overlays.Values)
@@ -108,9 +115,6 @@ namespace ShengXi.View
 
                 _overlays.Clear();
             }
-
-            _lastHovered = null;
-            _lastContext = BuildingType.None;
         }
 
         private Sprite GetSprite()

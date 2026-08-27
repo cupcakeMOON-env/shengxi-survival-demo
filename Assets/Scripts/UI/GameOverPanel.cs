@@ -65,7 +65,7 @@ namespace ShengXi.UI
         {
             _resultText.text = victory ? "胜利！" : "失败！";
             _resultText.color = victory ? new Color(0.4f, 0.9f, 0.4f) : new Color(0.95f, 0.35f, 0.35f);
-            _detailText.text = victory ? $"你撑过了第 {day} 天" : $"据点在白天 {day} 被摧毁";
+            _detailText.text = victory ? $"你撑过了第 {day - 1} 天" : $"据点在第 {day} 天被摧毁";
             _panel.SetActive(true);
         }
 

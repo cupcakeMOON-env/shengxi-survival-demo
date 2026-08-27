@@ -131,7 +131,17 @@ namespace ShengXi.Core
             _baseConfirmed = true;
             GameOver = false;
             Victory = false;
-            _nextEnemyId = data.enemies != null && data.enemies.Length > 0 ? data.enemies.Length + 1 : 1;
+            _nextEnemyId = 0;
+            if (data.enemies != null)
+            {
+                foreach (var enemy in data.enemies)
+                {
+                    if (enemy.id + 1 > _nextEnemyId)
+                    {
+                        _nextEnemyId = enemy.id + 1;
+                    }
+                }
+            }
 
             // 统一刷新：视图层全部通过事件重建
             GameEvents.RaiseMapInitialized(Map);

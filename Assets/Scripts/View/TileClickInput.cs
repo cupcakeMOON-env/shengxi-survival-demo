@@ -87,11 +87,7 @@ namespace ShengXi.View
                     pos);
                 Debug.Log($"[TileClickInput] 建造 {_buildMode.ActiveDef.Name} grid={pos} ok={built}");
             }
-            else
-            {
-                var collected = CollectService.TryCollect(GameLoop.Instance.Map, GameLoop.Instance.Pool, pos);
-                Debug.Log($"[TileClickInput] 采集 grid={pos} ok={collected}");
-            }
+            // 无建造模式时点击不做事：采集由采集站自动完成，不再支持手动点击采集
         }
     }
 }

@@ -35,6 +35,8 @@ namespace ShengXi.Core
             Seed = Random.Range(1, int.MaxValue);
             Map = MapGenerator.CreateRandomMap(MapGenerator.DefaultWidth, MapGenerator.DefaultHeight, Seed);
             Pool = new ResourcePool();
+            Pool.Add(ResourceType.Wood, StartingWood);
+            Pool.Add(ResourceType.Stone, StartingStone);
             ActionPoints = new ActionPointSystem(10);
             Cycle = new DayCycle();
             Base = null;
@@ -61,6 +63,8 @@ namespace ShengXi.Core
         private const float CombatTickInterval = 0.5f;
         private float _combatTimer;
         private int _nextEnemyId;
+        private const int StartingWood = 20;
+        private const int StartingStone = 15;
 
         private void Awake()
         {
@@ -68,6 +72,8 @@ namespace ShengXi.Core
             Seed = Random.Range(1, int.MaxValue);
             Map = MapGenerator.CreateRandomMap(MapGenerator.DefaultWidth, MapGenerator.DefaultHeight, Seed);
             Pool = new ResourcePool();
+            Pool.Add(ResourceType.Wood, StartingWood);
+            Pool.Add(ResourceType.Stone, StartingStone);
             ActionPoints = new ActionPointSystem(10);
             Cycle = new DayCycle();
             GameEvents.RaiseMapInitialized(Map);

@@ -1,8 +1,8 @@
 namespace ShengXi.Simulation
 {
     /// <summary>
-    /// 采集服务：点击资源格 → 扣格子余量 → 加进资源池 → 发事件。
-    /// 纯 C# 可单测。M1 先做点击采集，采集站自动采集放到 M2。
+    /// 采集服务：资源格 → 扣格子余量 → 加进资源池 → 发事件。
+    /// 纯 C# 可单测。手动点击采集已移除，现在由采集站（CollectorSystem）每 tick 调用。
     /// 资源采空后格子变回草地（视觉反馈，也防止继续采）。
     /// </summary>
     public static class CollectService

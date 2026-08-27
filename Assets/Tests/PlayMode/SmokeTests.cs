@@ -32,6 +32,8 @@ namespace ShengXi.Tests.PlayMode
             Assert.That(loop.Map.Height, Is.EqualTo(30));
             Assert.That(loop.Cycle.IsDay, Is.True);
             Assert.That(loop.IsChoosingBase, Is.True, "开局应处于选择据点阶段");
+            Assert.That(loop.Pool.GetAmount(ResourceType.Wood), Is.EqualTo(20), "开局应有初始木头（采集改为采集站产出）");
+            Assert.That(loop.Pool.GetAmount(ResourceType.Stone), Is.EqualTo(15), "开局应有初始石头");
 
             var baseSpot = FindBuildableTile(loop.Map);
             Assert.That(baseSpot.HasValue, Is.True, "应存在可放置据点的格子");

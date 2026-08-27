@@ -39,7 +39,7 @@ namespace ShengXi.UI
 
             CreateButton(barRoot.transform, x, "拆除", () => _buildMode.SetDemolishActive());
 
-            CreateButton(barRoot.transform, x, "结束白天", () =>
+            CreateButton(barRoot.transform, x, "进入夜晚", () =>
             {
                 if (GameLoop.Instance != null)
                 {
@@ -62,6 +62,10 @@ namespace ShengXi.UI
                     GameLoop.Instance.LoadGame();
                 }
             });
+
+            // 整行居中：按钮总宽为 x，把锚点从屏幕中心左移一半，
+            // 避免右侧按钮（进入夜晚/存档/读档）在常见窗口下溢出屏幕。
+            rt.anchoredPosition = new Vector2(-x * 0.5f, 12f);
         }
 
         private static string FormatCost(BuildingDef def)

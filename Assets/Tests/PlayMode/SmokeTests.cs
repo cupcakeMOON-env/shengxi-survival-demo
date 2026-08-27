@@ -6,6 +6,7 @@ using ShengXi.Simulation;
 using ShengXi.UI;
 using ShengXi.View;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.TestTools;
 
 namespace ShengXi.Tests.PlayMode
@@ -212,6 +213,37 @@ namespace ShengXi.Tests.PlayMode
                 grassRenderer.color,
                 Is.EqualTo(terrainColorBefore),
                 "拆除后格子应恢复地形色（BuildingRemoved 事件接线）");
+        }
+
+        [UnityTest]
+        public IEnumerator BuildMenu_AllButtonsVisibleOnScreen()
+        {
+            yield return null;
+            GameLoop.Instance.NewGame();
+            yield return null;
+
+            var buildMenu = Object.FindAnyObjectByType<BuildMenu>();
+            Assert.That(buildMenu, Is.Not.Null, "BuildMenu 应存在");
+            var barGo = GameObject.Find("BuildMenu");
+            Assert.That(barGo, Is.Not.Null, "BuildMenu 按钮条容器应存在");
+            var bar = barGo.transform;
+
+            var buttonCount = 0;
+            foreach (Transform child in bar)
+            {
+                if (child.GetComponent<Button>() == null)
+                {
+                    continue;
+                }
+
+                buttonCount++;
+                var corners = new Vector3[4];
+                child.GetComponent<RectTransform>().GetWorldCorners(corners);
+                Assert.That(corners[0].x, Is.GreaterThanOrEqualTo(0f), $"{child.name} 左边界应可见");
+                Assert.That(corners[2].x, Is.LessThanOrEqualTo(Screen.width), $"{child.name} 右边界应可见");
+            }
+
+            Assert.That(buttonCount, Is.GreaterThanOrEqualTo(9), "底部应有全部功能按钮");
         }
 
         private static GridPos? FindResourceTile(GridMap map, TerrainType terrain)

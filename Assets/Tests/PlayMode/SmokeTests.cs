@@ -133,6 +133,13 @@ namespace ShengXi.Tests.PlayMode
                     Is.True,
                     "应能成功建造仓库");
 
+                var warehouseTile = FindTileRenderer(buildSpot.Value);
+                Assert.That(warehouseTile, Is.Not.Null, "应能找到仓库所在格子的渲染物体");
+                Assert.That(
+                    warehouseTile.color,
+                    Is.EqualTo(new Color(0.62f, 0.45f, 0.28f)),
+                    "仓库格子应显示专属棕色（建筑颜色区分）");
+
                 var woodSaved = loop.Pool.GetAmount(ResourceType.Wood);
                 var capacitySaved = loop.Pool.Capacity;
                 var apSaved = loop.ActionPoints.Current;
@@ -197,6 +204,33 @@ namespace ShengXi.Tests.PlayMode
         {
             var spot = FindBuildableTile(loop.Map);
             return spot.HasValue && loop.ConfirmBase(spot.Value);
+        }
+
+        private static SpriteRenderer FindTileRenderer(GridPos pos)
+        {
+            var gridView = Object.FindAnyObjectByType<GridView>();
+            if (gridView == null)
+            {
+                return null;
+            }
+
+            var grid = gridView.transform.Find("Grid");
+            if (grid == null)
+            {
+                return null;
+            }
+
+            for (var i = 0; i < grid.childCount; i++)
+            {
+                var child = grid.GetChild(i);
+                if (Mathf.FloorToInt(child.localPosition.x) == pos.X &&
+                    Mathf.FloorToInt(child.localPosition.y) == pos.Y)
+                {
+                    return child.GetComponent<SpriteRenderer>();
+                }
+            }
+
+            return null;
         }
     }
 }

@@ -16,7 +16,11 @@ namespace ShengXi.View
         [SerializeField] private Color stoneColor = new Color(0.58f, 0.56f, 0.52f);
         [SerializeField] private Color waterColor = new Color(0.25f, 0.48f, 0.70f);
         [SerializeField] private Color bushColor = new Color(0.85f, 0.52f, 0.18f);
-        [SerializeField] private Color wallColor = new Color(0.45f, 0.38f, 0.32f);
+        [SerializeField] private Color collectorColor = new Color(0.30f, 0.75f, 0.55f);
+        [SerializeField] private Color warehouseColor = new Color(0.62f, 0.45f, 0.28f);
+        [SerializeField] private Color wallColor = new Color(0.60f, 0.58f, 0.56f);
+        [SerializeField] private Color towerColor = new Color(0.35f, 0.55f, 0.90f);
+        [SerializeField] private Color workshopColor = new Color(0.95f, 0.62f, 0.20f);
         [SerializeField] private Color baseColor = new Color(0.95f, 0.82f, 0.30f);
 
         private const float TileSize = 0.96f;
@@ -65,7 +69,7 @@ namespace ShengXi.View
                 return;
             }
 
-            renderer.color = building == BuildingType.Wall ? wallColor : ColorForTile(_map.GetTile(pos));
+            renderer.color = ColorForTile(_map.GetTile(pos));
         }
 
         private void OnBuildingRemoved(GridPos pos)
@@ -150,7 +154,27 @@ namespace ShengXi.View
             _ => grassColor,
         };
 
-        private Color ColorForTile(Tile tile) =>
-            tile != null && tile.Building == BuildingType.Base ? baseColor : ColorFor(tile.Terrain);
+        /// <summary>格子颜色优先级：建筑 > 地形；每种建筑有独立颜色，方便一眼区分。</summary>
+        private Color ColorForTile(Tile tile)
+        {
+            if (tile == null)
+            {
+                return grassColor;
+            }
+
+            var buildingColor = ColorForBuilding(tile.Building);
+            return buildingColor ?? ColorFor(tile.Terrain);
+        }
+
+        private Color? ColorForBuilding(BuildingType building) => building switch
+        {
+            BuildingType.Base => baseColor,
+            BuildingType.Collector => collectorColor,
+            BuildingType.Warehouse => warehouseColor,
+            BuildingType.Wall => wallColor,
+            BuildingType.ArrowTower => towerColor,
+            BuildingType.Workshop => workshopColor,
+            _ => null,
+        };
     }
 }

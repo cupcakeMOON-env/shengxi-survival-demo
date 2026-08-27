@@ -37,6 +37,25 @@ namespace ShengXi.Tests.Editor
         }
 
         [Test]
+        public void Wall_IsTheSturdiestBuilding()
+        {
+            var wall = BuildingCatalog.Get(BuildingType.Wall);
+
+            foreach (var def in BuildingCatalog.All)
+            {
+                if (def.Type == BuildingType.Wall)
+                {
+                    continue;
+                }
+
+                Assert.That(
+                    wall.MaxHp,
+                    Is.GreaterThan(def.MaxHp),
+                    $"围墙应比其他建筑更厚（{def.Type} MaxHp={def.MaxHp}）");
+            }
+        }
+
+        [Test]
         public void Get_ReturnsDefForType()
         {
             Assert.That(BuildingCatalog.Get(BuildingType.Warehouse).Name, Is.EqualTo("仓库"));

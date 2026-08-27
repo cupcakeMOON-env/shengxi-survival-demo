@@ -37,8 +37,8 @@ namespace ShengXi.Simulation
                 Name = "围墙",
                 WoodCost = 2,
                 ActionPointCost = 1,
-                MaxHp = 3,
-                Description = "阻挡敌人通行；敌人会优先攻击它（M3 生效）",
+                MaxHp = 10,
+                Description = "最厚的建筑：专为阻挡敌人而设，敌人会优先攻击它",
             },
             new BuildingDef
             {

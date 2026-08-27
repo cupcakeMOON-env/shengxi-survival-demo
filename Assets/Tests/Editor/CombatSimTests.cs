@@ -52,7 +52,7 @@ namespace ShengXi.Tests.Editor
             Assert.That(enemies.Count, Is.EqualTo(1));
             Assert.That(enemies[0].Position, Is.EqualTo(new GridPos(6, 8)), "贴墙时原地攻击");
             Assert.That(map.GetTile(new GridPos(6, 7)).Building, Is.EqualTo(BuildingType.Wall));
-            Assert.That(map.GetTile(new GridPos(6, 7)).BuildingHp, Is.EqualTo(2), "围墙 3 血 - 伤害 1");
+            Assert.That(map.GetTile(new GridPos(6, 7)).BuildingHp, Is.EqualTo(9), "围墙 10 血 - 伤害 1");
             Assert.That(baseDefense.CurrentHp, Is.EqualTo(20), "有墙可打时本回合不该扣据点血");
         }
 
@@ -66,7 +66,7 @@ namespace ShengXi.Tests.Editor
             CombatSim.Tick(map, pool, baseDefense, enemies);
 
             Assert.That(enemies[0].Position, Is.EqualTo(new GridPos(6, 8)), "应朝墙的贴邻格移动");
-            Assert.That(map.GetTile(new GridPos(6, 7)).BuildingHp, Is.EqualTo(3), "未贴身不应扣建筑血");
+            Assert.That(map.GetTile(new GridPos(6, 7)).BuildingHp, Is.EqualTo(10), "未贴身不应扣建筑血");
             Assert.That(baseDefense.CurrentHp, Is.EqualTo(20));
         }
 
@@ -80,8 +80,8 @@ namespace ShengXi.Tests.Editor
 
             CombatSim.Tick(map, pool, baseDefense, enemies);
 
-            Assert.That(map.GetTile(new GridPos(5, 4)).BuildingHp, Is.EqualTo(2), "应攻击更近的墙");
-            Assert.That(map.GetTile(new GridPos(8, 5)).BuildingHp, Is.EqualTo(3), "更远的墙不受影响");
+            Assert.That(map.GetTile(new GridPos(5, 4)).BuildingHp, Is.EqualTo(9), "应攻击更近的墙");
+            Assert.That(map.GetTile(new GridPos(8, 5)).BuildingHp, Is.EqualTo(10), "更远的墙不受影响");
         }
 
         [Test]
@@ -91,12 +91,12 @@ namespace ShengXi.Tests.Editor
             map.Place(BuildingType.Wall, new GridPos(6, 7));
             var enemies = new List<Enemy> { new Enemy(1, new GridPos(6, 8), 10, 1) };
 
-            for (var i = 0; i < 3; i++)
+            for (var i = 0; i < 10; i++)
             {
                 CombatSim.Tick(map, pool, baseDefense, enemies);
             }
 
-            Assert.That(map.GetTile(new GridPos(6, 7)).Building, Is.EqualTo(BuildingType.None), "3 tick 后墙应被摧毁");
+            Assert.That(map.GetTile(new GridPos(6, 7)).Building, Is.EqualTo(BuildingType.None), "10 tick 后墙应被摧毁");
             Assert.That(map.GetTile(new GridPos(6, 7)).BuildingHp, Is.Zero);
             Assert.That(baseDefense.CurrentHp, Is.EqualTo(20), "墙被摧毁前据点不该掉血");
 

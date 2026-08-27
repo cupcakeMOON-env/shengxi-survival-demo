@@ -28,6 +28,15 @@ namespace ShengXi.Tests.Editor
         }
 
         [Test]
+        public void EveryDef_HasPositiveMaxHp()
+        {
+            foreach (var def in BuildingCatalog.All)
+            {
+                Assert.That(def.MaxHp, Is.GreaterThan(0), $"{def.Type} MaxHp");
+            }
+        }
+
+        [Test]
         public void Get_ReturnsDefForType()
         {
             Assert.That(BuildingCatalog.Get(BuildingType.Warehouse).Name, Is.EqualTo("仓库"));

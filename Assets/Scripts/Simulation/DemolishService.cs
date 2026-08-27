@@ -33,8 +33,7 @@ namespace ShengXi.Simulation
                 return false;
             }
 
-            var building = map.GetTile(pos).Building;
-            var def = BuildingCatalog.Get(building);
+            var def = BuildingCatalog.Get(map.GetTile(pos).Building);
 
             ap.Spend(ActionPointCost);
 
@@ -43,11 +42,27 @@ namespace ShengXi.Simulation
                 Refund(pool, ResourceType.Wood, def.WoodCost);
                 Refund(pool, ResourceType.Stone, def.StoneCost);
                 Refund(pool, ResourceType.Food, def.FoodCost);
+            }
 
-                if (def.CapacityBonus > 0)
-                {
-                    pool.ReduceCapacity(def.CapacityBonus);
-                }
+            return DestroyBuilding(map, pool, pos);
+        }
+
+        /// <summary>
+        /// 直接摧毁建筑（敌人攻击用）：撤销效果（仓库容量回落）、清除格子、发事件；
+        /// 不返还资源、不扣行动点。据点不可被此方法摧毁。
+        /// </summary>
+        public static bool DestroyBuilding(GridMap map, ResourcePool pool, GridPos pos)
+        {
+            var tile = map?.GetTile(pos);
+            if (tile == null || tile.Building == BuildingType.None || tile.Building == BuildingType.Base)
+            {
+                return false;
+            }
+
+            var def = BuildingCatalog.Get(tile.Building);
+            if (def != null && def.CapacityBonus > 0 && pool != null)
+            {
+                pool.ReduceCapacity(def.CapacityBonus);
             }
 
             map.RemoveBuilding(pos);

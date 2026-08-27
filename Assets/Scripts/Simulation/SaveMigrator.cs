@@ -8,7 +8,7 @@ namespace ShengXi.Simulation
     /// </summary>
     public static class SaveMigrator
     {
-        public const int CurrentVersion = 1;
+        public const int CurrentVersion = 2;
 
         public static SaveData Upgrade(SaveData data)
         {
@@ -23,6 +23,24 @@ namespace ShengXi.Simulation
                 data.food = 0;
                 data.capacity = data.capacity > 0 ? data.capacity : 100;
                 data.version = 1;
+            }
+
+            if (data.version < 2)
+            {
+                // v1 → v2：建筑新增血量字段；旧档建筑按目录血量补齐（视为满血）
+                if (data.tiles != null)
+                {
+                    foreach (var t in data.tiles)
+                    {
+                        if (t.building != (int)BuildingType.None)
+                        {
+                            var def = BuildingCatalog.Get((BuildingType)t.building);
+                            t.buildingHp = def != null && def.MaxHp > 0 ? def.MaxHp : 1;
+                        }
+                    }
+                }
+
+                data.version = 2;
             }
 
             if (data.tiles == null)

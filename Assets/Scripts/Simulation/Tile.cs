@@ -26,9 +26,15 @@ namespace ShengXi.Simulation
         public TerrainType Terrain { get; set; }
         public int ResourceAmount { get; set; }
         public BuildingType Building { get; set; }
+        /// <summary>建筑当前血量；无建筑时为 0。敌人攻击建筑时扣减，归零即摧毁。</summary>
+        public int BuildingHp { get; set; }
 
-        /// <summary>敌人/单位能否通过（水面与围墙不可通行）。</summary>
-        public bool IsWalkable => Terrain != TerrainType.Water && Building != BuildingType.Wall;
+        /// <summary>
+        /// 敌人/单位能否通过（水面与建筑不可通行；据点例外，敌人可踏入据点发动攻击）。
+        /// 建筑不可通行后，敌人只能贴着建筑攻击，符合塔防「先拆防御再打据点」的节奏。
+        /// </summary>
+        public bool IsWalkable => Terrain != TerrainType.Water &&
+                                 (Building == BuildingType.None || Building == BuildingType.Base);
 
         public Tile(TerrainType terrain)
         {

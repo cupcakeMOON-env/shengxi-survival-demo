@@ -49,6 +49,7 @@ namespace ShengXi.Simulation
                         terrain = (int)tile.Terrain,
                         resourceAmount = tile.ResourceAmount,
                         building = (int)tile.Building,
+                        buildingHp = tile.BuildingHp,
                     });
                 }
             }
@@ -65,7 +66,7 @@ namespace ShengXi.Simulation
                     y = enemy.Position.Y,
                     hp = enemy.HP,
                     maxHp = enemy.MaxHp,
-                    damage = enemy.DamageToBase,
+                    damage = enemy.Damage,
                 });
             }
 
@@ -95,6 +96,7 @@ namespace ShengXi.Simulation
                 }
 
                 map.Place(building, new GridPos(t.x, t.y));
+                map.SetBuildingHp(new GridPos(t.x, t.y), t.buildingHp);
             }
 
             return map;

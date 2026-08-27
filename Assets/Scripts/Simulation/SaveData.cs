@@ -9,7 +9,7 @@ namespace ShengXi.Simulation
     [Serializable]
     public class SaveData
     {
-        public int version = 1;
+        public int version = 2;
         public int seed;
         public int width;
         public int height;
@@ -36,6 +36,7 @@ namespace ShengXi.Simulation
         public int terrain;
         public int resourceAmount;
         public int building;
+        public int buildingHp;
     }
 
     [Serializable]

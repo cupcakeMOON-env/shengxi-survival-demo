@@ -51,6 +51,7 @@ namespace ShengXi.Tests.Editor
             map.SetTerrain(new GridPos(2, 2), TerrainType.Forest, 5);
             map.Place(BuildingType.Collector, new GridPos(2, 2));
             map.Place(BuildingType.ArrowTower, new GridPos(3, 3));
+            map.SetBuildingHp(new GridPos(3, 3), 2); // 模拟箭塔被敌人打掉 3 血
             map.Place(BuildingType.Base, new GridPos(5, 5));
 
             var data = SaveSerializer.Build(
@@ -66,6 +67,7 @@ namespace ShengXi.Tests.Editor
 
             Assert.That(restored.GetTile(new GridPos(2, 2)).Building, Is.EqualTo(BuildingType.Collector));
             Assert.That(restored.GetTile(new GridPos(3, 3)).Building, Is.EqualTo(BuildingType.ArrowTower));
+            Assert.That(restored.GetTile(new GridPos(3, 3)).BuildingHp, Is.EqualTo(2), "建筑血量应随存档还原");
             Assert.That(restored.GetTile(new GridPos(5, 5)).Building, Is.EqualTo(BuildingType.Base));
             Assert.That(restored.GetTile(new GridPos(2, 2)).ResourceAmount, Is.EqualTo(5));
             Assert.That(restored.GetTile(new GridPos(2, 2)).Terrain, Is.EqualTo(TerrainType.Forest));
@@ -83,6 +85,29 @@ namespace ShengXi.Tests.Editor
             Assert.That(upgraded.capacity, Is.EqualTo(100));
             Assert.That(upgraded.tiles, Is.Not.Null);
             Assert.That(upgraded.enemies, Is.Not.Null);
+        }
+
+        [Test]
+        public void Migrator_UpgradesV1Save_FillsBuildingHp()
+        {
+            var old = new SaveData
+            {
+                version = 1,
+                tiles = new[]
+                {
+                    new SaveTileData { x = 1, y = 1, building = (int)BuildingType.Wall },
+                    new SaveTileData { x = 2, y = 2, building = (int)BuildingType.None },
+                },
+            };
+
+            var upgraded = SaveMigrator.Upgrade(old);
+
+            Assert.That(upgraded.version, Is.EqualTo(SaveMigrator.CurrentVersion));
+            Assert.That(
+                upgraded.tiles[0].buildingHp,
+                Is.EqualTo(BuildingCatalog.Get(BuildingType.Wall).MaxHp),
+                "旧档建筑应按目录血量补满");
+            Assert.That(upgraded.tiles[1].buildingHp, Is.Zero, "空地血量保持 0");
         }
 
         [Test]

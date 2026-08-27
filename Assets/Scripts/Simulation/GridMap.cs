@@ -61,7 +61,10 @@ namespace ShengXi.Simulation
                 return false;
             }
 
-            _tiles[pos.X, pos.Y].Building = building;
+            var tile = _tiles[pos.X, pos.Y];
+            tile.Building = building;
+            var def = BuildingCatalog.Get(building);
+            tile.BuildingHp = def != null && def.MaxHp > 0 ? def.MaxHp : 1;
             return true;
         }
 
@@ -72,7 +75,20 @@ namespace ShengXi.Simulation
                 return;
             }
 
-            _tiles[pos.X, pos.Y].Building = BuildingType.None;
+            var tile = _tiles[pos.X, pos.Y];
+            tile.Building = BuildingType.None;
+            tile.BuildingHp = 0;
+        }
+
+        /// <summary>读档恢复建筑血量：直接设置，不发事件。</summary>
+        public void SetBuildingHp(GridPos pos, int hp)
+        {
+            if (!IsInside(pos))
+            {
+                return;
+            }
+
+            _tiles[pos.X, pos.Y].BuildingHp = System.Math.Max(0, hp);
         }
 
         public IEnumerable<GridPos> FindBuildingPositions(BuildingType type)

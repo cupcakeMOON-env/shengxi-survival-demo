@@ -16,6 +16,7 @@ namespace ShengXi.Simulation
                 WoodCost = 5,
                 StoneCost = 3,
                 ActionPointCost = 1,
+                MaxHp = 5,
                 RequiresResourceTile = true,
                 Description = "建在资源格上，每秒自动采集 1 个资源",
             },
@@ -27,6 +28,7 @@ namespace ShengXi.Simulation
                 StoneCost = 5,
                 ActionPointCost = 2,
                 CapacityBonus = 100,
+                MaxHp = 5,
                 Description = "资源容量上限 +100",
             },
             new BuildingDef
@@ -35,7 +37,8 @@ namespace ShengXi.Simulation
                 Name = "围墙",
                 WoodCost = 2,
                 ActionPointCost = 1,
-                Description = "阻挡敌人通行（M3 生效）",
+                MaxHp = 3,
+                Description = "阻挡敌人通行；敌人会优先攻击它（M3 生效）",
             },
             new BuildingDef
             {
@@ -44,6 +47,7 @@ namespace ShengXi.Simulation
                 WoodCost = 15,
                 StoneCost = 10,
                 ActionPointCost = 3,
+                MaxHp = 5,
                 Range = 3,
                 Damage = 1,
                 Description = "自动攻击敌人（M3 生效）",
@@ -55,6 +59,7 @@ namespace ShengXi.Simulation
                 WoodCost = 8,
                 StoneCost = 6,
                 ActionPointCost = 2,
+                MaxHp = 5,
                 Description = "加工建材（后续开放）",
             },
         };

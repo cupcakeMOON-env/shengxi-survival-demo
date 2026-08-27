@@ -222,7 +222,7 @@ namespace ShengXi.Core
 
         private void TickNight()
         {
-            CombatSim.Tick(Map, Base, Enemies);
+            CombatSim.Tick(Map, Pool, Base, Enemies);
             GameEvents.RaiseEnemyCountChanged(Enemies.Count);
 
             if (Base.IsDestroyed)

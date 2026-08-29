@@ -27,28 +27,26 @@ namespace ShengXi.Simulation
 
         /// <summary>
         /// 根据据点位置生成自适应刷怪点：
-        /// 据点所在行/列的四条边各取一个可行走格子（优先正对据点，被水挡住就向两侧扩展）。
+        /// 据点所在行/列的四条边各取一个「可行走且与据点连通」的格子
+        /// （优先正对据点，被水挡住就向两侧扩展；连不通的孤立水盆格会被跳过，
+        /// 否则敌人会卡死在出生点永远到不了据点）。
         /// </summary>
         public static IReadOnlyList<GridPos> SpawnPointsFor(GridMap map, GridPos basePos)
         {
             return new List<GridPos>
             {
-                FindEdgeSpawn(map, 0, basePos.Y, map.Height, isVertical: true),
-                FindEdgeSpawn(map, map.Width - 1, basePos.Y, map.Height, isVertical: true),
-                FindEdgeSpawn(map, 0, basePos.X, map.Width, isVertical: false),
-                FindEdgeSpawn(map, map.Height - 1, basePos.X, map.Width, isVertical: false),
+                FindEdgeSpawn(map, 0, basePos.Y, map.Height, isVertical: true, basePos),
+                FindEdgeSpawn(map, map.Width - 1, basePos.Y, map.Height, isVertical: true, basePos),
+                FindEdgeSpawn(map, 0, basePos.X, map.Width, isVertical: false, basePos),
+                FindEdgeSpawn(map, map.Height - 1, basePos.X, map.Width, isVertical: false, basePos),
             };
         }
 
-        private static GridPos FindEdgeSpawn(GridMap map, int edge, int preferred, int count, bool isVertical)
+        private static GridPos FindEdgeSpawn(GridMap map, int edge, int preferred, int count, bool isVertical, GridPos basePos)
         {
-            var first = isVertical ? new GridPos(edge, preferred) : new GridPos(preferred, edge);
-            if (map.GetTile(first) != null && map.GetTile(first).IsWalkable)
-            {
-                return first;
-            }
-
-            // 正对的格子不可走（比如是水），向两侧扩展
+            // 候选顺序：正对据点 → 向两侧扩展 → 整条边扫描
+            var candidates = new List<GridPos>();
+            candidates.Add(isVertical ? new GridPos(edge, preferred) : new GridPos(preferred, edge));
             for (var offset = 1; offset < count; offset++)
             {
                 foreach (var sign in new[] { -1, 1 })
@@ -59,24 +57,26 @@ namespace ShengXi.Simulation
                         continue;
                     }
 
-                    var pos = isVertical ? new GridPos(edge, index) : new GridPos(index, edge);
-                    if (map.GetTile(pos) != null && map.GetTile(pos).IsWalkable)
-                    {
-                        return pos;
-                    }
+                    candidates.Add(isVertical ? new GridPos(edge, index) : new GridPos(index, edge));
                 }
             }
 
-            // 整条边扫描兜底
             for (var i = 0; i < count; i++)
             {
-                var pos = isVertical ? new GridPos(edge, i) : new GridPos(i, edge);
-                if (map.GetTile(pos) != null && map.GetTile(pos).IsWalkable)
+                candidates.Add(isVertical ? new GridPos(edge, i) : new GridPos(i, edge));
+            }
+
+            foreach (var pos in candidates)
+            {
+                var tile = map.GetTile(pos);
+                if (tile != null && tile.IsWalkable && Pathfinding.IsReachable(map, pos, basePos))
                 {
                     return pos;
                 }
             }
 
+            // 极端兜底：整条边都连不通据点（如据点被围墙完全围死），退回正对格，至少不崩溃
+            var first = isVertical ? new GridPos(edge, preferred) : new GridPos(preferred, edge);
             return first;
         }
 

@@ -69,6 +69,56 @@ namespace ShengXi.Simulation
         }
 
         /// <summary>
+        /// BFS 连通性检查：from 是否能沿可通行格子走到 target（target 本身可通行即可达，
+        /// 与敌人寻路到据点贴邻攻击的语义一致）。
+        /// </summary>
+        public static bool IsReachable(GridMap map, GridPos from, GridPos target)
+        {
+            if (map == null || !map.IsInside(from) || !map.IsInside(target))
+            {
+                return false;
+            }
+
+            if (from == target)
+            {
+                return true;
+            }
+
+            var visited = new HashSet<GridPos> { from };
+            var queue = new Queue<GridPos>();
+            queue.Enqueue(from);
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                if (current == target)
+                {
+                    return true;
+                }
+
+                foreach (var dir in Directions)
+                {
+                    var next = new GridPos(current.X + dir.X, current.Y + dir.Y);
+                    if (!map.IsInside(next) || visited.Contains(next))
+                    {
+                        continue;
+                    }
+
+                    var tile = map.GetTile(next);
+                    if (tile == null || !tile.IsWalkable)
+                    {
+                        continue;
+                    }
+
+                    visited.Add(next);
+                    queue.Enqueue(next);
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
         /// 朝不可通行的建筑走一步：目标是建筑四周任意可达的可行走格子（最近者优先）。
         /// 敌人贴近建筑后由 CombatSim 执行攻击，不再继续移动。
         /// </summary>

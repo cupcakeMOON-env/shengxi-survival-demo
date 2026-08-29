@@ -129,6 +129,9 @@ namespace ShengXi.UI
             var scaler = go.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
+            // Expand：整个 1920×1080 参考画布始终完整可见（超宽屏两侧留黑边），
+            // 避免宽度优先缩放时画布超出屏幕、底部按钮条被裁掉。
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
             return canvas;
         }
 

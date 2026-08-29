@@ -224,6 +224,14 @@ namespace ShengXi.Tests.PlayMode
 
             var buildMenu = Object.FindAnyObjectByType<BuildMenu>();
             Assert.That(buildMenu, Is.Not.Null, "BuildMenu 应存在");
+            var canvas = Object.FindAnyObjectByType<Canvas>();
+            Assert.That(canvas, Is.Not.Null);
+            var scaler = canvas.GetComponent<CanvasScaler>();
+            Assert.That(scaler, Is.Not.Null);
+            Assert.That(
+                scaler.screenMatchMode,
+                Is.EqualTo(CanvasScaler.ScreenMatchMode.Expand),
+                "画布必须整体可见（超宽屏下底部按钮条才不会被裁掉）");
             var barGo = GameObject.Find("BuildMenu");
             Assert.That(barGo, Is.Not.Null, "BuildMenu 按钮条容器应存在");
             var bar = barGo.transform;
@@ -241,6 +249,8 @@ namespace ShengXi.Tests.PlayMode
                 child.GetComponent<RectTransform>().GetWorldCorners(corners);
                 Assert.That(corners[0].x, Is.GreaterThanOrEqualTo(0f), $"{child.name} 左边界应可见");
                 Assert.That(corners[2].x, Is.LessThanOrEqualTo(Screen.width), $"{child.name} 右边界应可见");
+                Assert.That(corners[0].y, Is.GreaterThanOrEqualTo(0f), $"{child.name} 底边界应可见");
+                Assert.That(corners[1].y, Is.LessThanOrEqualTo(Screen.height), $"{child.name} 顶边界应可见");
             }
 
             Assert.That(buttonCount, Is.GreaterThanOrEqualTo(9), "底部应有全部功能按钮");

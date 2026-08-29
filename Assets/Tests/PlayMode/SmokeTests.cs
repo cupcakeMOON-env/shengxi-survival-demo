@@ -298,8 +298,18 @@ namespace ShengXi.Tests.PlayMode
 
         private static bool ConfirmBaseAtWalkable(GameLoop loop)
         {
-            var spot = FindBuildableTile(loop.Map);
-            return spot.HasValue && loop.ConfirmBase(spot.Value);
+            for (var x = 0; x < loop.Map.Width; x++)
+            {
+                for (var y = 0; y < loop.Map.Height; y++)
+                {
+                    if (loop.ConfirmBase(new GridPos(x, y)))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private static SpriteRenderer FindTileRenderer(GridPos pos)

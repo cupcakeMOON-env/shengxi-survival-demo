@@ -30,16 +30,41 @@ namespace ShengXi.Simulation
         /// 据点所在行/列的四条边各取一个「可行走且与据点连通」的格子
         /// （优先正对据点，被水挡住就向两侧扩展；连不通的孤立水盆格会被跳过，
         /// 否则敌人会卡死在出生点永远到不了据点）。
+        /// 若某条边整条都连不通据点（极端地形），改用任意一条可达边上的刷怪点，
+        /// 保证所有敌人从出生点就能走到据点。
         /// </summary>
         public static IReadOnlyList<GridPos> SpawnPointsFor(GridMap map, GridPos basePos)
         {
-            return new List<GridPos>
+            var points = new List<GridPos>
             {
                 FindEdgeSpawn(map, 0, basePos.Y, map.Height, isVertical: true, basePos),
                 FindEdgeSpawn(map, map.Width - 1, basePos.Y, map.Height, isVertical: true, basePos),
                 FindEdgeSpawn(map, 0, basePos.X, map.Width, isVertical: false, basePos),
                 FindEdgeSpawn(map, map.Height - 1, basePos.X, map.Width, isVertical: false, basePos),
             };
+
+            GridPos? reachableFallback = null;
+            foreach (var point in points)
+            {
+                if (Pathfinding.IsReachable(map, point, basePos))
+                {
+                    reachableFallback = point;
+                    break;
+                }
+            }
+
+            if (reachableFallback.HasValue)
+            {
+                for (var i = 0; i < points.Count; i++)
+                {
+                    if (!Pathfinding.IsReachable(map, points[i], basePos))
+                    {
+                        points[i] = reachableFallback.Value;
+                    }
+                }
+            }
+
+            return points;
         }
 
         private static GridPos FindEdgeSpawn(GridMap map, int edge, int preferred, int count, bool isVertical, GridPos basePos)

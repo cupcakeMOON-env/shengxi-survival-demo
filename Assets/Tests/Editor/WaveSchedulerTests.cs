@@ -115,59 +115,14 @@ namespace ShengXi.Tests.Editor
                 map.Place(BuildingType.Base, b);
 
                 var spawns = WaveScheduler.SpawnPointsFor(map, b);
-                AssertSpawnEdgeReachability(map, b, spawns[0], 0, b.Y, map.Height, isVertical: true);
-                AssertSpawnEdgeReachability(map, b, spawns[1], map.Width - 1, b.Y, map.Height, isVertical: true);
-                AssertSpawnEdgeReachability(map, b, spawns[2], 0, b.X, map.Width, isVertical: false);
-                AssertSpawnEdgeReachability(map, b, spawns[3], map.Height - 1, b.X, map.Width, isVertical: false);
-            }
-        }
-
-        private static void AssertSpawnEdgeReachability(
-            GridMap map,
-            GridPos basePos,
-            GridPos spawn,
-            int edge,
-            int preferred,
-            int count,
-            bool isVertical)
-        {
-            var reachable = Pathfinding.IsReachable(map, spawn, basePos);
-            var edgeHasReachableOption = EdgeHasReachableSpawn(map, edge, preferred, count, isVertical, basePos);
-            Assert.That(
-                reachable,
-                Is.EqualTo(edgeHasReachableOption),
-                $"spawn={spawn} base={basePos}：边上有连通候选时刷怪点必须连通；否则才允许兜底");
-        }
-
-        /// <summary>该边是否存在「可行走且与据点连通」的候选刷怪格（与 FindEdgeSpawn 的候选集合一致）。</summary>
-        private static bool EdgeHasReachableSpawn(
-            GridMap map,
-            int edge,
-            int preferred,
-            int count,
-            bool isVertical,
-            GridPos basePos)
-        {
-            for (var offset = 0; offset < count; offset++)
-            {
-                foreach (var sign in new[] { -1, 1 })
+                foreach (var spawn in spawns)
                 {
-                    var index = preferred + sign * offset;
-                    if (index < 0 || index >= count)
-                    {
-                        continue;
-                    }
-
-                    var pos = isVertical ? new GridPos(edge, index) : new GridPos(index, edge);
-                    var tile = map.GetTile(pos);
-                    if (tile != null && tile.IsWalkable && Pathfinding.IsReachable(map, pos, basePos))
-                    {
-                        return true;
-                    }
+                    Assert.That(
+                        Pathfinding.IsReachable(map, spawn, b),
+                        Is.True,
+                        $"seed={seed} spawn={spawn}：刷怪点必须与据点连通（据点已保证连通地图边缘）");
                 }
             }
-
-            return false;
         }
 
         private static GridPos? FirstPlaceableTile(GridMap map)

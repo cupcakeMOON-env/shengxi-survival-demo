@@ -28,7 +28,7 @@ namespace ShengXi.UI
             rt.anchorMin = new Vector2(0.5f, 0f);
             rt.anchorMax = new Vector2(0.5f, 0f);
             rt.pivot = new Vector2(0.5f, 0f);
-            rt.anchoredPosition = new Vector2(0f, 12f);
+            rt.anchoredPosition = new Vector2(0f, 90f);
 
             var x = 0f;
 
@@ -65,7 +65,9 @@ namespace ShengXi.UI
 
             // 整行居中：按钮总宽为 x，把锚点从屏幕中心左移一半，
             // 避免右侧按钮（进入夜晚/存档/读档）在常见窗口下溢出屏幕。
-            rt.anchoredPosition = new Vector2(-x * 0.5f, 12f);
+            // 纵向抬高到 y=90，让按钮条贴在地图下沿（地图底边约在屏幕高度 7% 处），
+            // 不再悬在屏幕底部造成大片留白；按钮背景半透明，地图透过可见。
+            rt.anchoredPosition = new Vector2(-x * 0.5f, 90f);
         }
 
         private static string FormatCost(BuildingDef def)
@@ -90,7 +92,7 @@ namespace ShengXi.UI
             rt.sizeDelta = new Vector2(130f, 64f);
             rt.anchoredPosition = new Vector2(x, 0f);
 
-            go.GetComponent<Image>().color = new Color(0.15f, 0.18f, 0.22f, 0.92f);
+            go.GetComponent<Image>().color = new Color(0.15f, 0.18f, 0.22f, 0.55f);
             var button = go.GetComponent<Button>();
             button.targetGraphic = go.GetComponent<Image>();
             button.onClick.AddListener(onClick);

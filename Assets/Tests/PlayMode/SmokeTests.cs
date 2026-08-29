@@ -237,6 +237,7 @@ namespace ShengXi.Tests.PlayMode
             var bar = barGo.transform;
 
             var buttonCount = 0;
+            var lastRight = float.MinValue;
             foreach (Transform child in bar)
             {
                 if (child.GetComponent<Button>() == null)
@@ -251,6 +252,11 @@ namespace ShengXi.Tests.PlayMode
                 Assert.That(corners[2].x, Is.LessThanOrEqualTo(Screen.width), $"{child.name} 右边界应可见");
                 Assert.That(corners[0].y, Is.GreaterThanOrEqualTo(0f), $"{child.name} 底边界应可见");
                 Assert.That(corners[1].y, Is.LessThanOrEqualTo(Screen.height), $"{child.name} 顶边界应可见");
+                Assert.That(
+                    corners[0].x,
+                    Is.GreaterThanOrEqualTo(lastRight - 0.01f),
+                    $"{child.name} 不应与前一按钮重叠（历史 bug：按钮未推进 x 坐标导致叠在一起）");
+                lastRight = corners[2].x;
             }
 
             Assert.That(buttonCount, Is.GreaterThanOrEqualTo(9), "底部应有全部功能按钮");

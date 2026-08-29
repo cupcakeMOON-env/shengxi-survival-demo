@@ -37,9 +37,9 @@ namespace ShengXi.UI
                 x = CreateButton(barRoot.transform, x, $"{def.Name}\n{FormatCost(def)}", () => _buildMode.SetActive(def));
             }
 
-            CreateButton(barRoot.transform, x, "拆除", () => _buildMode.SetDemolishActive());
+            x = CreateButton(barRoot.transform, x, "拆除", () => _buildMode.SetDemolishActive());
 
-            CreateButton(barRoot.transform, x, "进入夜晚", () =>
+            x = CreateButton(barRoot.transform, x, "进入夜晚", () =>
             {
                 if (GameLoop.Instance != null)
                 {
@@ -47,7 +47,7 @@ namespace ShengXi.UI
                 }
             });
 
-            CreateButton(barRoot.transform, x, "存档", () =>
+            x = CreateButton(barRoot.transform, x, "存档", () =>
             {
                 if (GameLoop.Instance != null)
                 {
@@ -55,7 +55,7 @@ namespace ShengXi.UI
                 }
             });
 
-            CreateButton(barRoot.transform, x, "读档", () =>
+            x = CreateButton(barRoot.transform, x, "读档", () =>
             {
                 if (GameLoop.Instance != null)
                 {

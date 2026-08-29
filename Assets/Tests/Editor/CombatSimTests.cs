@@ -71,7 +71,7 @@ namespace ShengXi.Tests.Editor
         }
 
         [Test]
-        public void Enemy_PrefersNearestBuilding_ByManhattan()
+        public void Enemy_PrefersNearestBuilding_ByPath()
         {
             var (map, pool, _, baseDefense) = Setup();
             map.Place(BuildingType.Wall, new GridPos(5, 4)); // 距敌人 1
@@ -82,6 +82,23 @@ namespace ShengXi.Tests.Editor
 
             Assert.That(map.GetTile(new GridPos(5, 4)).BuildingHp, Is.EqualTo(9), "应攻击更近的墙");
             Assert.That(map.GetTile(new GridPos(8, 5)).BuildingHp, Is.EqualTo(10), "更远的墙不受影响");
+        }
+
+        [Test]
+        public void Enemy_PrefersPathNearestBuilding_OverManhattanNearestBlockedByWater()
+        {
+            var (map, pool, _, baseDefense) = Setup();
+            map.SetTerrain(new GridPos(5, 3), TerrainType.Water, 0);
+            map.SetTerrain(new GridPos(6, 3), TerrainType.Water, 0);
+            map.Place(BuildingType.Wall, new GridPos(5, 2)); // 曼哈顿 2，但被水挡住需绕行（路径 3）
+            map.Place(BuildingType.Wall, new GridPos(7, 3)); // 曼哈顿 3，路径 2（直通）
+            var enemies = new List<Enemy> { new Enemy(1, new GridPos(5, 4), 10, 1) };
+
+            CombatSim.Tick(map, pool, baseDefense, enemies);
+
+            Assert.That(enemies[0].Position, Is.EqualTo(new GridPos(6, 4)), "应朝路径更近的墙 (7,3) 移动");
+            Assert.That(map.GetTile(new GridPos(5, 2)).BuildingHp, Is.EqualTo(10), "曼哈顿更近但路径更远的墙不应被攻击");
+            Assert.That(map.GetTile(new GridPos(7, 3)).BuildingHp, Is.EqualTo(10), "尚未贴身，目标墙不应掉血");
         }
 
         [Test]
@@ -142,6 +159,87 @@ namespace ShengXi.Tests.Editor
             Assert.That(map.GetTile(warehousePos).Building, Is.EqualTo(BuildingType.None), "仓库应被摧毁");
             Assert.That(pool.Capacity, Is.EqualTo(ResourcePool.DefaultCapacity), "仓库被拆后容量应回落");
             Assert.That(enemies.Count, Is.EqualTo(1));
+        }
+
+        [Test]
+        public void BuildingDamagedEvent_RaisedWhenEnemyAttacksBuilding()
+        {
+            var (map, pool, _, baseDefense) = Setup();
+            var wallPos = new GridPos(6, 7);
+            map.Place(BuildingType.Wall, wallPos);
+            var enemies = new List<Enemy> { new Enemy(1, new GridPos(6, 8), 10, 1) };
+            var observedPos = new GridPos(-1, -1);
+            var observedHp = 0;
+            var observedMax = 0;
+
+            GameEvents.BuildingDamaged += Handler;
+            try
+            {
+                CombatSim.Tick(map, pool, baseDefense, enemies);
+            }
+            finally
+            {
+                GameEvents.BuildingDamaged -= Handler;
+            }
+
+            Assert.That(observedPos, Is.EqualTo(wallPos), "事件应携带被攻击的建筑坐标");
+            Assert.That(observedHp, Is.EqualTo(9), "围墙 10 血 - 伤害 1");
+            Assert.That(observedMax, Is.EqualTo(BuildingCatalog.Get(BuildingType.Wall).MaxHp));
+
+            void Handler(GridPos pos, int hp, int maxHp)
+            {
+                observedPos = pos;
+                observedHp = hp;
+                observedMax = maxHp;
+            }
+        }
+
+        [Test]
+        public void BuildingDamagedEvent_NotRaisedWhenEnemyAttacksBase()
+        {
+            var (map, pool, _, baseDefense) = Setup();
+            var enemies = new List<Enemy> { new Enemy(1, new GridPos(7, 6), 5, 1) };
+            var raised = false;
+
+            GameEvents.BuildingDamaged += Handler;
+            try
+            {
+                CombatSim.Tick(map, pool, baseDefense, enemies);
+            }
+            finally
+            {
+                GameEvents.BuildingDamaged -= Handler;
+            }
+
+            Assert.That(raised, Is.False, "攻击据点不应触发 BuildingDamaged（据点走 BaseHpChanged）");
+            Assert.That(baseDefense.CurrentHp, Is.EqualTo(19));
+
+            void Handler(GridPos pos, int hp, int maxHp) => raised = true;
+        }
+
+        [Test]
+        public void EnemyDamagedEvent_RaisedWhenTowerHitsEnemy()
+        {
+            var (map, pool, _, baseDefense) = Setup();
+            map.Place(BuildingType.ArrowTower, new GridPos(6, 5));
+            var enemies = new List<Enemy> { new Enemy(1, new GridPos(6, 3), 3, 1) };
+            Enemy observed = null;
+
+            GameEvents.EnemyDamaged += Handler;
+            try
+            {
+                CombatSim.Tick(map, pool, baseDefense, enemies);
+            }
+            finally
+            {
+                GameEvents.EnemyDamaged -= Handler;
+            }
+
+            Assert.That(observed, Is.Not.Null, "箭塔命中应触发 EnemyDamaged");
+            Assert.That(observed.HP, Is.EqualTo(2), "3 血敌人受 1 伤后剩 2");
+            Assert.That(enemies.Count, Is.EqualTo(1), "受击未死亡不应被移除");
+
+            void Handler(Enemy enemy) => observed = enemy;
         }
 
         [Test]

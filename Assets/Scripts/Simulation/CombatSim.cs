@@ -5,11 +5,19 @@ namespace ShengXi.Simulation
 {
     /// <summary>
     /// 战斗结算：每 tick 先让箭塔射击射程内最近的敌人；
-    /// 再让存活敌人优先锁定最近的建筑（曼哈顿距离），贴身后持续攻击直到摧毁；
+    /// 再让存活敌人优先锁定路径距离最近的建筑（BFS，绕开不可通行格），贴身后持续攻击直到摧毁；
     /// 场上没有建筑时才转向据点，到达据点造成伤害并消失。
     /// </summary>
     public static class CombatSim
     {
+        private static readonly GridPos[] Directions =
+        {
+            new GridPos(0, 1),
+            new GridPos(0, -1),
+            new GridPos(-1, 0),
+            new GridPos(1, 0),
+        };
+
         public static void Tick(GridMap map, ResourcePool pool, Base baseDefense, List<Enemy> enemies)
         {
             if (map == null || baseDefense == null || enemies == null)
@@ -30,6 +38,7 @@ namespace ShengXi.Simulation
                     }
 
                     target.HP -= towerDef.Damage;
+                    GameEvents.RaiseEnemyDamaged(target);
                     if (target.IsDead)
                     {
                         GameEvents.RaiseEnemyDied(target);
@@ -112,39 +121,72 @@ namespace ShengXi.Simulation
         }
 
         /// <summary>
-        /// 锁定距敌人最近的建筑（曼哈顿距离，据点除外，仅统计存活建筑）。
+        /// 锁定路径距离最近的建筑：从敌人位置 BFS 扩展可通行格子，
+        /// 第一个「贴邻存活建筑」的格子即代表路径最近目标（据点除外）。
+        /// 相比曼哈顿距离，不会被水面/围墙后的「看起来近」误导。
         /// 没有其他建筑时返回 null，敌人转攻据点。
         /// </summary>
         private static GridPos? FindNearestBuilding(GridMap map, GridPos from)
         {
-            GridPos? nearest = null;
-            var bestDistance = int.MaxValue;
-
-            for (var x = 0; x < map.Width; x++)
+            if (map == null || !map.IsInside(from))
             {
-                for (var y = 0; y < map.Height; y++)
+                return null;
+            }
+
+            var visited = new HashSet<GridPos> { from };
+            var queue = new Queue<GridPos>();
+            queue.Enqueue(from);
+
+            while (queue.Count > 0)
+            {
+                var current = queue.Dequeue();
+                var building = NearestAliveBuildingAround(map, current);
+                if (building.HasValue)
                 {
-                    var tile = map.GetTile(new GridPos(x, y));
-                    if (tile == null ||
-                        tile.Building == BuildingType.None ||
-                        tile.Building == BuildingType.Base ||
-                        tile.BuildingHp <= 0)
+                    return building;
+                }
+
+                foreach (var dir in Directions)
+                {
+                    var next = new GridPos(current.X + dir.X, current.Y + dir.Y);
+                    if (!map.IsInside(next) || visited.Contains(next))
                     {
                         continue;
                     }
 
-                    var dx = Math.Abs(x - from.X);
-                    var dy = Math.Abs(y - from.Y);
-                    var distance = dx + dy;
-                    if (distance < bestDistance)
+                    var tile = map.GetTile(next);
+                    if (tile == null || !tile.IsWalkable)
                     {
-                        bestDistance = distance;
-                        nearest = new GridPos(x, y);
+                        continue;
                     }
+
+                    visited.Add(next);
+                    queue.Enqueue(next);
                 }
             }
 
-            return nearest;
+            return null;
+        }
+
+        /// <summary>返回 pos 四周第一个存活且非据点的建筑（按方向顺序，平局时确定性取先扫到的）。</summary>
+        private static GridPos? NearestAliveBuildingAround(GridMap map, GridPos pos)
+        {
+            foreach (var dir in Directions)
+            {
+                var neighbor = new GridPos(pos.X + dir.X, pos.Y + dir.Y);
+                var tile = map.GetTile(neighbor);
+                if (tile == null ||
+                    tile.Building == BuildingType.None ||
+                    tile.Building == BuildingType.Base ||
+                    tile.BuildingHp <= 0)
+                {
+                    continue;
+                }
+
+                return neighbor;
+            }
+
+            return null;
         }
 
         private static void AttackBuilding(GridMap map, ResourcePool pool, GridPos pos, int damage)
@@ -156,6 +198,12 @@ namespace ShengXi.Simulation
             }
 
             tile.BuildingHp -= damage;
+            var def = BuildingCatalog.Get(tile.Building);
+            if (def != null)
+            {
+                GameEvents.RaiseBuildingDamaged(pos, System.Math.Max(0, tile.BuildingHp), def.MaxHp);
+            }
+
             if (tile.BuildingHp <= 0)
             {
                 DemolishService.DestroyBuilding(map, pool, pos);

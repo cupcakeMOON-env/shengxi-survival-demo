@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using ShengXi.Core;
 using ShengXi.Simulation;
@@ -24,8 +25,14 @@ namespace ShengXi.View
         [SerializeField] private Color baseColor = new Color(0.95f, 0.82f, 0.30f);
 
         private const float TileSize = 0.96f;
+        private const float FlashDuration = 0.18f;
+        private const float BarWidth = 0.7f;
+        private const float BarHeight = 0.1f;
+        private const float BarYOffset = 0.56f;
 
         private readonly Dictionary<GridPos, SpriteRenderer> _tiles = new Dictionary<GridPos, SpriteRenderer>();
+        private readonly Dictionary<GridPos, Coroutine> _flashes = new Dictionary<GridPos, Coroutine>();
+        private readonly Dictionary<GridPos, BuildingHealthBar> _healthBars = new Dictionary<GridPos, BuildingHealthBar>();
         private Sprite _unitSprite;
         private GridMap _map;
         private Transform _tileRoot;
@@ -36,6 +43,7 @@ namespace ShengXi.View
             GameEvents.TerrainChanged += OnTerrainChanged;
             GameEvents.BuildingPlaced += OnBuildingPlaced;
             GameEvents.BuildingRemoved += OnBuildingRemoved;
+            GameEvents.BuildingDamaged += OnBuildingDamaged;
 
             EnsureTileRoot();
             if (GameLoop.Instance != null)
@@ -50,6 +58,7 @@ namespace ShengXi.View
             GameEvents.TerrainChanged -= OnTerrainChanged;
             GameEvents.BuildingPlaced -= OnBuildingPlaced;
             GameEvents.BuildingRemoved -= OnBuildingRemoved;
+            GameEvents.BuildingDamaged -= OnBuildingDamaged;
         }
 
         private void OnMapInitialized(GridMap map) => Build(map);
@@ -70,6 +79,7 @@ namespace ShengXi.View
             }
 
             renderer.color = ColorForTile(_map.GetTile(pos));
+            EnsureHealthBar(pos, renderer);
         }
 
         private void OnBuildingRemoved(GridPos pos)
@@ -80,6 +90,18 @@ namespace ShengXi.View
             }
 
             renderer.color = ColorForTile(_map.GetTile(pos));
+            StopFlash(pos);
+            DestroyHealthBar(pos);
+        }
+
+        private void OnBuildingDamaged(GridPos pos, int currentHp, int maxHp)
+        {
+            if (_healthBars.TryGetValue(pos, out var bar))
+            {
+                bar.SetRatio(maxHp > 0 ? (float)currentHp / maxHp : 0f);
+            }
+
+            FlashTile(pos);
         }
 
         private void Build(GridMap map)
@@ -88,14 +110,7 @@ namespace ShengXi.View
             Clear();
             EnsureTileRoot();
 
-            if (_unitSprite == null)
-            {
-                _unitSprite = Sprite.Create(
-                    Texture2D.whiteTexture,
-                    new Rect(0, 0, 1, 1),
-                    new Vector2(0.5f, 0.5f),
-                    1f);
-            }
+            EnsureUnitSprite();
 
             for (var x = 0; x < map.Width; x++)
             {
@@ -111,12 +126,26 @@ namespace ShengXi.View
                     sr.color = ColorForTile(map.GetTile(pos));
                     sr.transform.localScale = new Vector3(TileSize, TileSize, 1f);
                     _tiles[pos] = sr;
+                    if (map.GetTile(pos).Building != BuildingType.None)
+                    {
+                        EnsureHealthBar(pos, sr);
+                    }
                 }
             }
         }
 
         private void Clear()
         {
+            foreach (var coroutine in _flashes.Values)
+            {
+                if (coroutine != null)
+                {
+                    StopCoroutine(coroutine);
+                }
+            }
+
+            _flashes.Clear();
+            _healthBars.Clear();
             if (_tileRoot == null)
             {
                 return;
@@ -128,6 +157,120 @@ namespace ShengXi.View
             }
 
             _tiles.Clear();
+        }
+
+        private void EnsureUnitSprite()
+        {
+            if (_unitSprite != null)
+            {
+                return;
+            }
+
+            _unitSprite = Sprite.Create(
+                Texture2D.whiteTexture,
+                new Rect(0, 0, 1, 1),
+                new Vector2(0.5f, 0.5f),
+                1f);
+        }
+
+        /// <summary>受击闪白：格子颜色从本色脉冲到白色再恢复（每次受击重置动画）。</summary>
+        private void FlashTile(GridPos pos)
+        {
+            if (_flashes.TryGetValue(pos, out var running) && running != null)
+            {
+                StopCoroutine(running);
+            }
+
+            _flashes[pos] = StartCoroutine(FlashTileRoutine(pos));
+        }
+
+        private void StopFlash(GridPos pos)
+        {
+            if (_flashes.TryGetValue(pos, out var running) && running != null)
+            {
+                StopCoroutine(running);
+            }
+
+            _flashes.Remove(pos);
+        }
+
+        private IEnumerator FlashTileRoutine(GridPos pos)
+        {
+            if (!_tiles.TryGetValue(pos, out var renderer) || _map == null)
+            {
+                _flashes.Remove(pos);
+                yield break;
+            }
+
+            var baseColor = ColorForTile(_map.GetTile(pos));
+            var elapsed = 0f;
+            while (elapsed < FlashDuration)
+            {
+                elapsed += Time.deltaTime;
+                var pulse = 1f - Mathf.Abs(elapsed / FlashDuration * 2f - 1f);
+                renderer.color = Color.Lerp(baseColor, Color.white, pulse);
+                yield return null;
+            }
+
+            renderer.color = baseColor;
+            _flashes.Remove(pos);
+        }
+
+        /// <summary>为有血量的建筑格子创建血条（位于格子上方，随血量左右收缩）。</summary>
+        private void EnsureHealthBar(GridPos pos, SpriteRenderer tileRenderer)
+        {
+            if (_healthBars.ContainsKey(pos) || _map == null)
+            {
+                return;
+            }
+
+            var def = BuildingCatalog.Get(_map.GetTile(pos).Building);
+            if (def == null || def.MaxHp <= 0)
+            {
+                return;
+            }
+
+            EnsureUnitSprite();
+            var bar = new BuildingHealthBar
+            {
+                Width = BarWidth,
+                Background = CreateBarSprite(tileRenderer.transform, new Color(0f, 0f, 0f, 0.65f), 1f),
+                Fill = CreateBarSprite(tileRenderer.transform, new Color(0.38f, 0.88f, 0.32f), 1f),
+            };
+            bar.SetRatio((float)_map.GetTile(pos).BuildingHp / def.MaxHp);
+            _healthBars[pos] = bar;
+        }
+
+        private SpriteRenderer CreateBarSprite(Transform parent, Color color, float ratio)
+        {
+            var go = new GameObject("HpBar");
+            go.transform.SetParent(parent, false);
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = _unitSprite;
+            sr.color = color;
+            sr.transform.localScale = new Vector3(BarWidth * ratio, BarHeight, 1f);
+            sr.transform.localPosition = new Vector3(BarWidth * (ratio - 1f) * 0.5f, BarYOffset, -0.1f);
+            return sr;
+        }
+
+        private void DestroyHealthBar(GridPos pos)
+        {
+            if (!_healthBars.TryGetValue(pos, out var bar))
+            {
+                return;
+            }
+
+            if (bar.Background != null)
+            {
+                Destroy(bar.Background.gameObject);
+            }
+
+            if (bar.Fill != null)
+            {
+                Destroy(bar.Fill.gameObject);
+            }
+
+            _healthBars.Remove(pos);
         }
 
         /// <summary>
@@ -176,5 +319,20 @@ namespace ShengXi.View
             BuildingType.Workshop => workshopColor,
             _ => null,
         };
+
+        /// <summary>建筑血条：底黑条 + 前景填充，填充从左侧收缩。</summary>
+        private class BuildingHealthBar
+        {
+            public SpriteRenderer Background;
+            public SpriteRenderer Fill;
+            public float Width;
+
+            public void SetRatio(float ratio)
+            {
+                ratio = Mathf.Clamp01(ratio);
+                Fill.transform.localScale = new Vector3(Width * ratio, BarHeight, 1f);
+                Fill.transform.localPosition = new Vector3(Width * (ratio - 1f) * 0.5f, BarYOffset, -0.1f);
+            }
+        }
     }
 }

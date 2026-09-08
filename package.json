@@ -1,0 +1,19 @@
+{
+  "name": "rts-demo",
+  "version": "1.0.0",
+  "description": "ShengXi Survival Demo (Windows) - npm wrapper that downloads the game from GitHub Releases and launches it",
+  "license": "UNLICENSED",
+  "private": false,
+  "os": [
+    "win32"
+  ],
+  "bin": {
+    "rts-demo": "./bin/rts-demo.js"
+  },
+  "scripts": {
+    "postinstall": "node ./scripts/postinstall.js"
+  },
+  "engines": {
+    "node": ">=16"
+  }
+}

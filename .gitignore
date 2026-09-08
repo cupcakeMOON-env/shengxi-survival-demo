@@ -27,3 +27,5 @@
 /test-results.xml
 /playmode-results.xml
 /CodeCoverage/
+node_modules/
+/game/

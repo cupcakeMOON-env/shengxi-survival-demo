@@ -8,6 +8,17 @@
 - 打开 `Assets/Scenes/Main.unity`（首次加载会自动创建）
 - 按 Play
 
+## 通过 npm 游玩（Windows）
+
+不打开 Unity 也能玩已打包版本：
+
+```bash
+npm install -g github:cupcakeMOON-env/rts-demo
+rts-demo
+```
+
+安装时包装脚本会从 GitHub Release 自动下载游戏（约 33MB）到本机，之后 `rts-demo` 命令直接启动游戏。
+
 ## 操作
 
 | 操作 | 说明 |

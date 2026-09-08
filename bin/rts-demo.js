@@ -7,7 +7,7 @@ const { spawn } = require("child_process");
 const exe = path.join(__dirname, "..", "game", "ShengXiSurvivalDemo.exe");
 
 if (!fs.existsSync(exe)) {
-  console.error("[rts-demo] 游戏文件不存在，请先重新执行：npm install -g github:cupcakeMOON-env/rts-demo");
+  console.error("[rts-demo] 游戏文件不存在，请先重新执行：npm install -g https://codeload.github.com/cupcakeMOON-env/rts-demo/tar.gz/v1.0.0");
   process.exit(1);
 }
 

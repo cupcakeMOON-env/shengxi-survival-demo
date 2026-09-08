@@ -13,7 +13,7 @@
 不打开 Unity 也能玩已打包版本：
 
 ```bash
-npm install -g github:cupcakeMOON-env/rts-demo
+npm install -g https://codeload.github.com/cupcakeMOON-env/rts-demo/tar.gz/v1.0.0
 rts-demo
 ```
 

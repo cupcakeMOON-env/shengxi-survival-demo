@@ -50,7 +50,8 @@ namespace ShengXi.Simulation
                 MaxHp = 5,
                 Range = 3,
                 Damage = 1,
-                Description = "自动攻击敌人（M3 生效）",
+                FoodPerSecond = 1,
+                Description = "夜晚每秒消耗 1 食物；断粮时停止攻击，恢复供给后继续",
             },
             new BuildingDef
             {

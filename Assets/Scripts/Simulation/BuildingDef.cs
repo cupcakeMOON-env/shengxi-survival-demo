@@ -16,6 +16,7 @@ namespace ShengXi.Simulation
         public int MaxHp;                  // 建筑血量：敌人锁定并攻击建筑时按此扣血，归零即被摧毁
         public int Range;                  // 攻击类建筑：射程（曼哈顿距离，单位=格）
         public int Damage;                 // 攻击类建筑：每 tick 伤害
+        public int FoodPerSecond;          // 夜晚防御类建筑的食物供给消耗（0 = 不需要食物）
         public bool RequiresResourceTile;  // 采集站：必须建在有剩余资源的资源格上
         public string Description;
     }

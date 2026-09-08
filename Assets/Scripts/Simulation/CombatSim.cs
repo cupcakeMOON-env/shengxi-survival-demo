@@ -31,6 +31,11 @@ namespace ShengXi.Simulation
             {
                 foreach (var towerPos in map.FindBuildingPositions(BuildingType.ArrowTower))
                 {
+                    if (!FoodSupplySystem.IsSupplied(map, towerPos))
+                    {
+                        continue;
+                    }
+
                     var target = FindNearestEnemy(towerPos, enemies, towerDef.Range);
                     if (target == null)
                     {

@@ -21,6 +21,7 @@ namespace ShengXi.View
         [SerializeField] private Color warehouseColor = new Color(0.62f, 0.45f, 0.28f);
         [SerializeField] private Color wallColor = new Color(0.60f, 0.58f, 0.56f);
         [SerializeField] private Color towerColor = new Color(0.35f, 0.55f, 0.90f);
+        [SerializeField] private Color starvedColor = new Color(0.26f, 0.28f, 0.33f);
         [SerializeField] private Color workshopColor = new Color(0.95f, 0.62f, 0.20f);
         [SerializeField] private Color baseColor = new Color(0.95f, 0.82f, 0.30f);
 
@@ -44,6 +45,7 @@ namespace ShengXi.View
             GameEvents.BuildingPlaced += OnBuildingPlaced;
             GameEvents.BuildingRemoved += OnBuildingRemoved;
             GameEvents.BuildingDamaged += OnBuildingDamaged;
+            GameEvents.BuildingSupplyChanged += OnBuildingSupplyChanged;
 
             EnsureTileRoot();
             if (GameLoop.Instance != null)
@@ -59,6 +61,7 @@ namespace ShengXi.View
             GameEvents.BuildingPlaced -= OnBuildingPlaced;
             GameEvents.BuildingRemoved -= OnBuildingRemoved;
             GameEvents.BuildingDamaged -= OnBuildingDamaged;
+            GameEvents.BuildingSupplyChanged -= OnBuildingSupplyChanged;
         }
 
         private void OnMapInitialized(GridMap map) => Build(map);
@@ -102,6 +105,15 @@ namespace ShengXi.View
             }
 
             FlashTile(pos);
+        }
+
+        /// <summary>断粮恢复/断粮：直接按格子当前数据重上色（事件由模拟层在改完状态后发出）。</summary>
+        private void OnBuildingSupplyChanged(GridPos pos, bool supplied)
+        {
+            if (_tiles.TryGetValue(pos, out var renderer) && _map != null)
+            {
+                renderer.color = ColorForTile(_map.GetTile(pos));
+            }
         }
 
         private void Build(GridMap map)
@@ -212,7 +224,8 @@ namespace ShengXi.View
                 yield return null;
             }
 
-            renderer.color = baseColor;
+            // 闪烁期间状态可能变化（断粮/恢复），结束以最新数据上色而不是旧底色
+            renderer.color = ColorForTile(_map.GetTile(pos));
             _flashes.Remove(pos);
         }
 
@@ -306,7 +319,22 @@ namespace ShengXi.View
             }
 
             var buildingColor = ColorForBuilding(tile.Building);
-            return buildingColor ?? ColorFor(tile.Terrain);
+            if (buildingColor.HasValue)
+            {
+                // 需要食物的防御建筑断粮时统一变灰（当前只有箭塔）
+                if (tile.BuildingStarved)
+                {
+                    var def = BuildingCatalog.Get(tile.Building);
+                    if (def != null && def.FoodPerSecond > 0)
+                    {
+                        return starvedColor;
+                    }
+                }
+
+                return buildingColor.Value;
+            }
+
+            return ColorFor(tile.Terrain);
         }
 
         private Color? ColorForBuilding(BuildingType building) => building switch

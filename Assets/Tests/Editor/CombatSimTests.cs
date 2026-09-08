@@ -292,5 +292,40 @@ namespace ShengXi.Tests.Editor
 
             Assert.That(enemies[0].HP, Is.EqualTo(5), "曼哈顿距离 4 不应命中");
         }
+
+        [Test]
+        public void StarvedTower_DoesNotShoot()
+        {
+            var (map, pool, _, baseDefense) = Setup();
+            var towerPos = new GridPos(6, 5);
+            map.Place(BuildingType.ArrowTower, towerPos);
+            FoodSupplySystem.Tick(map, pool); // 没有食物 -> 断粮
+            var enemies = new List<Enemy> { new Enemy(1, new GridPos(6, 3), 5, 1) };
+
+            CombatSim.Tick(map, pool, baseDefense, enemies);
+
+            Assert.That(FoodSupplySystem.IsSupplied(map, towerPos), Is.False, "没粮的箭塔应处于断粮状态");
+            Assert.That(enemies[0].HP, Is.EqualTo(5), "断粮箭塔不应造成任何伤害");
+            Assert.That(baseDefense.CurrentHp, Is.EqualTo(20), "敌人尚未拆掉箭塔，据点不应掉血");
+        }
+
+        [Test]
+        public void TowerShootsAgain_AfterFoodRestored()
+        {
+            var (map, pool, _, baseDefense) = Setup();
+            var towerPos = new GridPos(6, 5);
+            map.Place(BuildingType.ArrowTower, towerPos);
+            FoodSupplySystem.Tick(map, pool); // 断粮
+
+            pool.Add(ResourceType.Food, 1);
+            FoodSupplySystem.Tick(map, pool); // 恢复供给并扣 1 食物
+            var enemies = new List<Enemy> { new Enemy(1, new GridPos(6, 3), 5, 1) };
+
+            CombatSim.Tick(map, pool, baseDefense, enemies);
+
+            Assert.That(FoodSupplySystem.IsSupplied(map, towerPos), Is.True, "有粮后箭塔应恢复工作");
+            Assert.That(enemies[0].HP, Is.EqualTo(4), "恢复后的箭塔应正常造成 1 伤害");
+            Assert.That(pool.GetAmount(ResourceType.Food), Is.Zero, "恢复结算已消耗掉 1 食物");
+        }
     }
 }

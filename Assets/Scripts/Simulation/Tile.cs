@@ -28,6 +28,10 @@ namespace ShengXi.Simulation
         public BuildingType Building { get; set; }
         /// <summary>建筑当前血量；无建筑时为 0。敌人攻击建筑时扣减，归零即摧毁。</summary>
         public int BuildingHp { get; set; }
+        /// <summary>
+        /// 防御建筑是否因食物耗尽而断粮停火（瞬态：不存档，读档后由 FoodSupplySystem 重算）。
+        /// </summary>
+        public bool BuildingStarved { get; set; }
 
         /// <summary>
         /// 敌人/单位能否通过（水面与建筑不可通行；据点例外，敌人可踏入据点发动攻击）。

@@ -21,6 +21,7 @@
 - 3 种资源：木头、石头、食物；开局自带木头20、石头15；资源靠采集站自动采集（手动点击采集已移除）；容量默认 100，仓库 +100，仓库被拆/被摧毁时容量回落
 - 行动点每天 10 点，建造消耗，每晚结束自动重置；拆除不消耗行动点
 - 5 种建筑：采集站（建在资源格上自动采集）、仓库（容量+100）、围墙（最厚的阻挡建筑）、箭塔（曼哈顿射程 3、伤害 1，数值在 BuildingCatalog）、工坊（占位）
+- 食物供给：箭塔夜晚战斗期间每秒消耗 1 食物（BuildingDef.FoodPerSecond）；食物不足时箭塔断粮停火（格子变灰），恢复供给后自动复工
 - 建筑血量（BuildingDef.MaxHp）：围墙 10，采集站/仓库/箭塔/工坊 5；敌人贴身攻击，归零即摧毁并撤销效果
 - 拆除建筑：白天任意拆（据点除外）、返还 50% 造价、仓库容量加成同步撤销
 - 建筑落格后格子变为对应颜色：采集站青绿、仓库棕、围墙灰、箭塔蓝、工坊橙、据点金
@@ -41,7 +42,7 @@
 │  Simulation（纯 C#，不依赖 Unity，可单测/可脱离 Unity 编译） │
 │  GridMap/Tile  ResourcePool  ActionPointSystem  DayCycle    │
 │  BuildService  DemolishService  CollectService  CombatSim   │
-│  CollectorSystem  WaveScheduler  Pathfinding  SaveMigrator  │
+│  CollectorSystem  FoodSupplySystem  WaveScheduler  Pathfinding  SaveMigrator │
 │  SaveSerializer  SaveData  BuildingDef  BuildingCatalog     │
 └───────────────┬─────────────────────────────────────────────┘
                 │ 数据驱动
@@ -56,7 +57,7 @@
 
 ## 测试
 
-- EditMode：Window → General → Test Runner → EditMode → Run All（当前 87 项）
+- EditMode：Window → General → Test Runner → EditMode → Run All（当前 104 项）
 - PlayMode 冒烟：Test Runner → PlayMode → Run All（当前 5 项；覆盖运行时装配层：引导、日夜循环、存读档、拆除、按钮可见性）
 - 模拟层脱离 Unity 独立验证：`dotnet run --project C:\Users\林好\ShengXiSimulationVerify\SimulationVerify.csproj`
 

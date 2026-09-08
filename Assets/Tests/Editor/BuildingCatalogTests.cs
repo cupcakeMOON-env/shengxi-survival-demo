@@ -70,8 +70,22 @@ namespace ShengXi.Tests.Editor
 
             Assert.That(tower.Range, Is.EqualTo(3));
             Assert.That(tower.Damage, Is.EqualTo(1));
+            Assert.That(tower.FoodPerSecond, Is.EqualTo(1), "箭塔夜晚每秒应消耗 1 食物");
             Assert.That(BuildingCatalog.Get(BuildingType.Warehouse).Range, Is.Zero);
             Assert.That(BuildingCatalog.Get(BuildingType.Wall).Damage, Is.Zero);
+        }
+
+        [Test]
+        public void OnlyArrowTower_ConsumesNightFood()
+        {
+            foreach (var def in BuildingCatalog.All)
+            {
+                var expected = def.Type == BuildingType.ArrowTower ? 1 : 0;
+                Assert.That(
+                    def.FoodPerSecond,
+                    Is.EqualTo(expected),
+                    $"{def.Type} 的 FoodPerSecond 应为 {expected}（当前只有箭塔会消耗食物）");
+            }
         }
     }
 }

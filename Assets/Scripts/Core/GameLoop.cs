@@ -47,6 +47,7 @@ namespace ShengXi.Core
             _nextEnemyId = 0;
             _collectorTimer = 0f;
             _combatTimer = 0f;
+            _supplyTimer = 0f;
 
             GameEvents.RaiseMapInitialized(Map);
             GameEvents.RaiseResourceChanged(ResourceType.Wood, 0);
@@ -62,6 +63,8 @@ namespace ShengXi.Core
         private float _collectorTimer;
         private const float CombatTickInterval = 0.5f;
         private float _combatTimer;
+        private const float SupplyTickInterval = FoodSupplySystem.TickInterval;
+        private float _supplyTimer;
         private int _nextEnemyId;
         private const int StartingWood = 20;
         private const int StartingStone = 15;
@@ -138,6 +141,7 @@ namespace ShengXi.Core
             GameOver = false;
             Victory = false;
             _nextEnemyId = 0;
+            _supplyTimer = 0f;
             if (data.enemies != null)
             {
                 foreach (var enemy in data.enemies)
@@ -147,6 +151,12 @@ namespace ShengXi.Core
                         _nextEnemyId = enemy.id + 1;
                     }
                 }
+            }
+
+            // 夜晚读档：按当前食物储备重算断粮状态，让视图与开火判定从第一帧就正确
+            if (data.isNight)
+            {
+                FoodSupplySystem.Refresh(Map, Pool);
             }
 
             // 统一刷新：视图层全部通过事件重建
@@ -192,7 +202,10 @@ namespace ShengXi.Core
 
             Enemies = wave;
             GameEvents.RaiseEnemyCountChanged(Enemies.Count);
+            // 夜晚开始：先按储备刷新一次供给（不扣费），没粮的箭塔立刻停火
+            FoodSupplySystem.Refresh(Map, Pool);
             _combatTimer = 0f;
+            _supplyTimer = 0f;
         }
 
         private void Update()
@@ -211,6 +224,13 @@ namespace ShengXi.Core
 
             if (Cycle.IsNight && Enemies.Count > 0)
             {
+                _supplyTimer += Time.deltaTime;
+                if (_supplyTimer >= SupplyTickInterval)
+                {
+                    _supplyTimer = 0f;
+                    FoodSupplySystem.Tick(Map, Pool);
+                }
+
                 _combatTimer += Time.deltaTime;
                 if (_combatTimer >= CombatTickInterval)
                 {
@@ -237,6 +257,7 @@ namespace ShengXi.Core
             {
                 Cycle.EndNight();
                 ActionPoints.ResetForNewDay();
+                FoodSupplySystem.RestoreAll(Map);
                 if (Cycle.Day > WaveScheduler.WinDay)
                 {
                     GameOver = true;

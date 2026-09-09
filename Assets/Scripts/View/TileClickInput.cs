@@ -95,6 +95,15 @@ namespace ShengXi.View
                     pos);
                 Debug.Log($"[TileClickInput] 拆除 grid={pos} ok={demolished}");
             }
+            else if (_buildMode != null && _buildMode.IsUpgrading)
+            {
+                var upgraded = UpgradeService.TryUpgrade(
+                    GameLoop.Instance.Map,
+                    GameLoop.Instance.Pool,
+                    GameLoop.Instance.ActionPoints,
+                    pos);
+                Debug.Log($"[TileClickInput] 升级 grid={pos} ok={upgraded}");
+            }
             // 无建造/拆除模式时点击不做事：采集由采集站自动完成，不再支持手动点击采集
         }
     }

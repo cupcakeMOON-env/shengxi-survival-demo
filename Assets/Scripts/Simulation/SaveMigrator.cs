@@ -8,7 +8,7 @@ namespace ShengXi.Simulation
     /// </summary>
     public static class SaveMigrator
     {
-        public const int CurrentVersion = 2;
+        public const int CurrentVersion = 3;
 
         public static SaveData Upgrade(SaveData data)
         {
@@ -41,6 +41,22 @@ namespace ShengXi.Simulation
                 }
 
                 data.version = 2;
+            }
+
+            if (data.version < 3)
+            {
+                // v2 → v3：建筑新增等级字段、资源池新增建材。
+                // 旧档建筑视为 1 级（血量已存、等级换算后最大血量等于目录血量，语义一致）；
+                // 建材数量旧档没有，保持 0。
+                if (data.tiles != null)
+                {
+                    foreach (var t in data.tiles)
+                    {
+                        t.level = t.building != (int)BuildingType.None ? 1 : 0;
+                    }
+                }
+
+                data.version = 3;
             }
 
             if (data.tiles == null)

@@ -32,13 +32,17 @@ namespace ShengXi.Simulation
                 return false;
             }
 
-            var def = BuildingCatalog.Get(map.GetTile(pos).Building);
+            var tile = map.GetTile(pos);
+            var def = BuildingCatalog.Get(tile.Building);
 
             if (def != null)
             {
                 Refund(pool, ResourceType.Wood, def.WoodCost);
                 Refund(pool, ResourceType.Stone, def.StoneCost);
                 Refund(pool, ResourceType.Food, def.FoodCost);
+                // 升级投入的建材同样返还一半（等级 1 时自然为 0）
+                var invested = def.UpgradeMaterialCost * (tile.BuildingLevel - 1);
+                Refund(pool, ResourceType.Material, invested);
             }
 
             return DestroyBuilding(map, pool, pos);

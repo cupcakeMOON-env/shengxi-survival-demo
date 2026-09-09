@@ -34,6 +34,12 @@ namespace ShengXi.Simulation
         public bool BuildingStarved { get; set; }
 
         /// <summary>
+        /// 建筑等级：建造为 1；箭塔/围墙可经 UpgradeService 消耗建材升级（等级影响伤害/血量）。
+        /// 无建筑时为 0；随存档 v3 持久化。
+        /// </summary>
+        public int BuildingLevel { get; set; }
+
+        /// <summary>
         /// 敌人/单位能否通过（水面与建筑不可通行；据点例外，敌人可踏入据点发动攻击）。
         /// 建筑不可通行后，敌人只能贴着建筑攻击，符合塔防「先拆防御再打据点」的节奏。
         /// </summary>

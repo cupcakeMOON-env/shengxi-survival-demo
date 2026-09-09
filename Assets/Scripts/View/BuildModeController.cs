@@ -16,6 +16,7 @@ namespace ShengXi.View
 
         public BuildingDef ActiveDef { get; private set; }
         public bool IsDemolishing { get; private set; }
+        public bool IsUpgrading { get; private set; }
 
         public void Initialize(Camera camera)
         {
@@ -30,6 +31,7 @@ namespace ShengXi.View
             if (toggled != null)
             {
                 IsDemolishing = false;
+                IsUpgrading = false;
             }
         }
 
@@ -40,6 +42,18 @@ namespace ShengXi.View
             if (IsDemolishing)
             {
                 ActiveDef = null;
+                IsUpgrading = false;
+            }
+        }
+
+        /// <summary>切换升级模式：再次点击关闭，切建造/拆除时自动退出。</summary>
+        public void SetUpgradeActive()
+        {
+            IsUpgrading = !IsUpgrading;
+            if (IsUpgrading)
+            {
+                ActiveDef = null;
+                IsDemolishing = false;
             }
         }
 
@@ -47,6 +61,7 @@ namespace ShengXi.View
         {
             ActiveDef = null;
             IsDemolishing = false;
+            IsUpgrading = false;
         }
 
         private void Update()
@@ -56,7 +71,7 @@ namespace ShengXi.View
                 !GameLoop.Instance.Cycle.IsDay ||
                 GameLoop.Instance.IsChoosingBase ||
                 _camera == null ||
-                (ActiveDef == null && !IsDemolishing))
+                (ActiveDef == null && !IsDemolishing && !IsUpgrading))
             {
                 if (_ghostCreated)
                 {
@@ -81,6 +96,20 @@ namespace ShengXi.View
                 _ghost.gameObject.SetActive(true);
                 _ghost.transform.position = new Vector3(pos.X, pos.Y, -0.5f);
                 _ghost.color = DemolishService.CanDemolish(GameLoop.Instance.Map, pos)
+                    ? new Color(0f, 1f, 0f, 0.45f)
+                    : new Color(1f, 0f, 0f, 0.45f);
+                return;
+            }
+
+            if (IsUpgrading)
+            {
+                _ghost.gameObject.SetActive(true);
+                _ghost.transform.position = new Vector3(pos.X, pos.Y, -0.5f);
+                _ghost.color = UpgradeService.CanUpgrade(
+                    GameLoop.Instance.Map,
+                    GameLoop.Instance.Pool,
+                    GameLoop.Instance.ActionPoints,
+                    pos)
                     ? new Color(0f, 1f, 0f, 0.45f)
                     : new Color(1f, 0f, 0f, 0.45f);
                 return;

@@ -25,29 +25,35 @@ namespace ShengXi.Simulation
                 return;
             }
 
-            // 1. 箭塔攻击
-            var towerDef = BuildingCatalog.Get(BuildingType.ArrowTower);
-            if (towerDef != null && towerDef.Range > 0 && towerDef.Damage > 0)
+            // 1. 箭塔攻击（伤害/射程按每座塔自己的等级取数，升级立竿见影）
+            foreach (var towerPos in map.FindBuildingPositions(BuildingType.ArrowTower))
             {
-                foreach (var towerPos in map.FindBuildingPositions(BuildingType.ArrowTower))
+                if (!FoodSupplySystem.IsSupplied(map, towerPos))
                 {
-                    if (!FoodSupplySystem.IsSupplied(map, towerPos))
-                    {
-                        continue;
-                    }
+                    continue;
+                }
 
-                    var target = FindNearestEnemy(towerPos, enemies, towerDef.Range);
-                    if (target == null)
-                    {
-                        continue;
-                    }
+                var towerDef = BuildingCatalog.Get(BuildingType.ArrowTower);
+                var tile = map.GetTile(towerPos);
+                var level = tile != null ? tile.BuildingLevel : 1;
+                var damage = BuildingStats.Damage(towerDef, level);
+                var range = towerDef != null ? towerDef.Range : 0;
+                if (towerDef == null || range <= 0 || damage <= 0)
+                {
+                    continue;
+                }
 
-                    target.HP -= towerDef.Damage;
-                    GameEvents.RaiseEnemyDamaged(target);
-                    if (target.IsDead)
-                    {
-                        GameEvents.RaiseEnemyDied(target);
-                    }
+                var target = FindNearestEnemy(towerPos, enemies, range);
+                if (target == null)
+                {
+                    continue;
+                }
+
+                target.HP -= damage;
+                GameEvents.RaiseEnemyDamaged(target);
+                if (target.IsDead)
+                {
+                    GameEvents.RaiseEnemyDied(target);
                 }
             }
 
@@ -202,11 +208,12 @@ namespace ShengXi.Simulation
                 return;
             }
 
-            tile.BuildingHp -= damage;
             var def = BuildingCatalog.Get(tile.Building);
+            tile.BuildingHp -= damage;
             if (def != null)
             {
-                GameEvents.RaiseBuildingDamaged(pos, System.Math.Max(0, tile.BuildingHp), def.MaxHp);
+                var maxHp = BuildingStats.MaxHp(def, tile.BuildingLevel);
+                GameEvents.RaiseBuildingDamaged(pos, System.Math.Max(0, tile.BuildingHp), maxHp);
             }
 
             if (tile.BuildingHp <= 0)

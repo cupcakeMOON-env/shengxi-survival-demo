@@ -48,11 +48,13 @@ namespace ShengXi.Core
             _collectorTimer = 0f;
             _combatTimer = 0f;
             _supplyTimer = 0f;
+            _productionTimer = 0f;
 
             GameEvents.RaiseMapInitialized(Map);
             GameEvents.RaiseResourceChanged(ResourceType.Wood, 0);
             GameEvents.RaiseResourceChanged(ResourceType.Stone, 0);
             GameEvents.RaiseResourceChanged(ResourceType.Food, 0);
+            GameEvents.RaiseResourceChanged(ResourceType.Material, 0);
             GameEvents.RaiseActionPointsChanged(ActionPoints.Current, ActionPoints.MaxPerDay);
             GameEvents.RaiseDayChanged(Cycle.Day);
             GameEvents.RaisePhaseChanged(Cycle.Phase);
@@ -65,6 +67,8 @@ namespace ShengXi.Core
         private float _combatTimer;
         private const float SupplyTickInterval = FoodSupplySystem.TickInterval;
         private float _supplyTimer;
+        private const float ProductionTickInterval = ProductionSystem.TickInterval;
+        private float _productionTimer;
         private int _nextEnemyId;
         private const int StartingWood = 20;
         private const int StartingStone = 15;
@@ -164,6 +168,7 @@ namespace ShengXi.Core
             GameEvents.RaiseResourceChanged(ResourceType.Wood, Pool.GetAmount(ResourceType.Wood));
             GameEvents.RaiseResourceChanged(ResourceType.Stone, Pool.GetAmount(ResourceType.Stone));
             GameEvents.RaiseResourceChanged(ResourceType.Food, Pool.GetAmount(ResourceType.Food));
+            GameEvents.RaiseResourceChanged(ResourceType.Material, Pool.GetAmount(ResourceType.Material));
             GameEvents.RaiseActionPointsChanged(ActionPoints.Current, ActionPoints.MaxPerDay);
             GameEvents.RaiseDayChanged(Cycle.Day);
             GameEvents.RaisePhaseChanged(Cycle.Phase);
@@ -220,6 +225,17 @@ namespace ShengXi.Core
             {
                 _collectorTimer = 0f;
                 CollectorSystem.Tick(Map, Pool);
+            }
+
+            // 工坊只在白天生产：夜晚人力用于防守，玩家无法再补原料/产能
+            if (Cycle.IsDay)
+            {
+                _productionTimer += Time.deltaTime;
+                if (_productionTimer >= ProductionTickInterval)
+                {
+                    _productionTimer = 0f;
+                    ProductionSystem.Tick(Map, Pool);
+                }
             }
 
             if (Cycle.IsNight && Enemies.Count > 0)

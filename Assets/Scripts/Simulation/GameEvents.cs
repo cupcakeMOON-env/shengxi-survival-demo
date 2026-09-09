@@ -24,6 +24,7 @@ namespace ShengXi.Simulation
         public static event Action<Enemy> EnemyDied;
         public static event Action<GridPos, int, int> BuildingDamaged;
         public static event Action<GridPos, bool> BuildingSupplyChanged;
+        public static event Action<GridPos, BuildingType, int> BuildingUpgraded;
         public static event Action<bool, int> GameOver;
 
         public static void RaiseMapInitialized(GridMap map) => MapInitialized?.Invoke(map);
@@ -57,6 +58,9 @@ namespace ShengXi.Simulation
         public static void RaiseBuildingDamaged(GridPos pos, int currentHp, int maxHp) => BuildingDamaged?.Invoke(pos, currentHp, maxHp);
 
         public static void RaiseBuildingSupplyChanged(GridPos pos, bool supplied) => BuildingSupplyChanged?.Invoke(pos, supplied);
+
+        public static void RaiseBuildingUpgraded(GridPos pos, BuildingType building, int level) =>
+            BuildingUpgraded?.Invoke(pos, building, level);
 
         public static void RaiseGameOver(bool victory, int day) => GameOver?.Invoke(victory, day);
     }

@@ -46,6 +46,7 @@ namespace ShengXi.View
             GameEvents.BuildingRemoved += OnBuildingRemoved;
             GameEvents.BuildingDamaged += OnBuildingDamaged;
             GameEvents.BuildingSupplyChanged += OnBuildingSupplyChanged;
+            GameEvents.BuildingUpgraded += OnBuildingUpgraded;
 
             EnsureTileRoot();
             if (GameLoop.Instance != null)
@@ -62,6 +63,7 @@ namespace ShengXi.View
             GameEvents.BuildingRemoved -= OnBuildingRemoved;
             GameEvents.BuildingDamaged -= OnBuildingDamaged;
             GameEvents.BuildingSupplyChanged -= OnBuildingSupplyChanged;
+            GameEvents.BuildingUpgraded -= OnBuildingUpgraded;
         }
 
         private void OnMapInitialized(GridMap map) => Build(map);
@@ -113,6 +115,24 @@ namespace ShengXi.View
             if (_tiles.TryGetValue(pos, out var renderer) && _map != null)
             {
                 renderer.color = ColorForTile(_map.GetTile(pos));
+            }
+        }
+
+        /// <summary>升级后重新上色（等级越高越亮）并按新等级血量刷新血条。</summary>
+        private void OnBuildingUpgraded(GridPos pos, BuildingType building, int level)
+        {
+            if (!_tiles.TryGetValue(pos, out var renderer) || _map == null)
+            {
+                return;
+            }
+
+            renderer.color = ColorForTile(_map.GetTile(pos));
+            var tile = _map.GetTile(pos);
+            var def = BuildingCatalog.Get(tile.Building);
+            var maxHp = BuildingStats.MaxHp(def, tile.BuildingLevel);
+            if (_healthBars.TryGetValue(pos, out var bar))
+            {
+                bar.SetRatio(maxHp > 0 ? (float)tile.BuildingHp / maxHp : 0f);
             }
         }
 
@@ -250,7 +270,7 @@ namespace ShengXi.View
                 Background = CreateBarSprite(tileRenderer.transform, new Color(0f, 0f, 0f, 0.65f), 1f),
                 Fill = CreateBarSprite(tileRenderer.transform, new Color(0.38f, 0.88f, 0.32f), 1f),
             };
-            bar.SetRatio((float)_map.GetTile(pos).BuildingHp / def.MaxHp);
+            bar.SetRatio((float)_map.GetTile(pos).BuildingHp / BuildingStats.MaxHp(def, _map.GetTile(pos).BuildingLevel));
             _healthBars[pos] = bar;
         }
 
@@ -329,6 +349,15 @@ namespace ShengXi.View
                     {
                         return starvedColor;
                     }
+                }
+
+                // 等级越高的建筑颜色越亮，升级效果一眼可见（等级 1 保持原始色）
+                if (tile.BuildingLevel > 1)
+                {
+                    buildingColor = Color.Lerp(
+                        buildingColor.Value,
+                        Color.white,
+                        Mathf.Min(0.4f, 0.15f * (tile.BuildingLevel - 1)));
                 }
 
                 return buildingColor.Value;

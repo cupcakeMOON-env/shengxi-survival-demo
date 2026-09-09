@@ -13,6 +13,7 @@ namespace ShengXi.Tests.Editor
             Assert.That(pool.GetAmount(ResourceType.Wood), Is.Zero);
             Assert.That(pool.GetAmount(ResourceType.Stone), Is.Zero);
             Assert.That(pool.GetAmount(ResourceType.Food), Is.Zero);
+            Assert.That(pool.GetAmount(ResourceType.Material), Is.Zero);
         }
 
         [Test]

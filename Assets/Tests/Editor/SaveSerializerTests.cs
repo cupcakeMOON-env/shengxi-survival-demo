@@ -14,6 +14,7 @@ namespace ShengXi.Tests.Editor
             pool.Add(ResourceType.Wood, 12);
             pool.Add(ResourceType.Stone, 7);
             pool.Add(ResourceType.Food, 3);
+            pool.Add(ResourceType.Material, 9);
             var ap = new ActionPointSystem(10);
             ap.Spend(4);
             var cycle = new DayCycle();
@@ -34,6 +35,7 @@ namespace ShengXi.Tests.Editor
             Assert.That(pool2.GetAmount(ResourceType.Wood), Is.EqualTo(12));
             Assert.That(pool2.GetAmount(ResourceType.Stone), Is.EqualTo(7));
             Assert.That(pool2.GetAmount(ResourceType.Food), Is.EqualTo(3));
+            Assert.That(pool2.GetAmount(ResourceType.Material), Is.EqualTo(9), "建材应随存档往返");
             Assert.That(pool2.Capacity, Is.EqualTo(300));
             Assert.That(ap2.Current, Is.EqualTo(6));
             Assert.That(cycle2.IsNight, Is.True);
@@ -51,6 +53,7 @@ namespace ShengXi.Tests.Editor
             map.SetTerrain(new GridPos(2, 2), TerrainType.Forest, 5);
             map.Place(BuildingType.Collector, new GridPos(2, 2));
             map.Place(BuildingType.ArrowTower, new GridPos(3, 3));
+            map.SetBuildingLevel(new GridPos(3, 3), 2); // 模拟升级过的箭塔
             map.SetBuildingHp(new GridPos(3, 3), 2); // 模拟箭塔被敌人打掉 3 血
             map.Place(BuildingType.Base, new GridPos(5, 5));
 
@@ -67,6 +70,7 @@ namespace ShengXi.Tests.Editor
 
             Assert.That(restored.GetTile(new GridPos(2, 2)).Building, Is.EqualTo(BuildingType.Collector));
             Assert.That(restored.GetTile(new GridPos(3, 3)).Building, Is.EqualTo(BuildingType.ArrowTower));
+            Assert.That(restored.GetTile(new GridPos(3, 3)).BuildingLevel, Is.EqualTo(2), "建筑等级应随存档还原");
             Assert.That(restored.GetTile(new GridPos(3, 3)).BuildingHp, Is.EqualTo(2), "建筑血量应随存档还原");
             Assert.That(restored.GetTile(new GridPos(5, 5)).Building, Is.EqualTo(BuildingType.Base));
             Assert.That(restored.GetTile(new GridPos(2, 2)).ResourceAmount, Is.EqualTo(5));
@@ -82,6 +86,7 @@ namespace ShengXi.Tests.Editor
 
             Assert.That(upgraded.version, Is.EqualTo(SaveMigrator.CurrentVersion));
             Assert.That(upgraded.food, Is.Zero);
+            Assert.That(upgraded.material, Is.Zero);
             Assert.That(upgraded.capacity, Is.EqualTo(100));
             Assert.That(upgraded.tiles, Is.Not.Null);
             Assert.That(upgraded.enemies, Is.Not.Null);
@@ -108,6 +113,31 @@ namespace ShengXi.Tests.Editor
                 Is.EqualTo(BuildingCatalog.Get(BuildingType.Wall).MaxHp),
                 "旧档建筑应按目录血量补满");
             Assert.That(upgraded.tiles[1].buildingHp, Is.Zero, "空地血量保持 0");
+            Assert.That(upgraded.tiles[0].level, Is.EqualTo(1), "旧档建筑应视为 1 级");
+            Assert.That(upgraded.tiles[1].level, Is.Zero, "空地等级保持 0");
+        }
+
+        [Test]
+        public void Migrator_UpgradesV2Save_AddsLevelAndMaterial()
+        {
+            var old = new SaveData
+            {
+                version = 2,
+                material = 0,
+                tiles = new[]
+                {
+                    new SaveTileData { x = 3, y = 3, building = (int)BuildingType.Wall, buildingHp = 7 },
+                    new SaveTileData { x = 4, y = 4, building = (int)BuildingType.None },
+                },
+            };
+
+            var upgraded = SaveMigrator.Upgrade(old);
+
+            Assert.That(upgraded.version, Is.EqualTo(SaveMigrator.CurrentVersion));
+            Assert.That(upgraded.material, Is.Zero, "v2 没有建材，迁移后应为 0");
+            Assert.That(upgraded.tiles[0].level, Is.EqualTo(1), "旧建筑升级路径补为 1 级");
+            Assert.That(upgraded.tiles[0].buildingHp, Is.EqualTo(7), "迁移不应改动已存的建筑血量");
+            Assert.That(upgraded.tiles[1].level, Is.Zero);
         }
 
         [Test]

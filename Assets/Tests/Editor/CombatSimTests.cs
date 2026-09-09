@@ -327,5 +327,52 @@ namespace ShengXi.Tests.Editor
             Assert.That(enemies[0].HP, Is.EqualTo(4), "恢复后的箭塔应正常造成 1 伤害");
             Assert.That(pool.GetAmount(ResourceType.Food), Is.Zero, "恢复结算已消耗掉 1 食物");
         }
+
+        [Test]
+        public void UpgradedTower_DealsBonusDamage()
+        {
+            var (map, pool, _, baseDefense) = Setup();
+            var towerPos = new GridPos(6, 5);
+            map.Place(BuildingType.ArrowTower, towerPos);
+            map.SetBuildingLevel(towerPos, 2);
+            map.SetBuildingHp(towerPos, BuildingStats.MaxHp(BuildingCatalog.Get(BuildingType.ArrowTower), 2));
+            var enemies = new List<Enemy> { new Enemy(1, new GridPos(6, 3), 3, 1) };
+
+            CombatSim.Tick(map, pool, baseDefense, enemies);
+
+            Assert.That(enemies[0].HP, Is.EqualTo(1), "2 级箭塔每 tick 应造成 2 伤害");
+        }
+
+        [Test]
+        public void UpgradedWall_HasHigherMaxHp_AndDamagedEventCarriesIt()
+        {
+            var (map, pool, _, baseDefense) = Setup();
+            var wallPos = new GridPos(6, 7);
+            map.Place(BuildingType.Wall, wallPos);
+            map.SetBuildingLevel(wallPos, 2);
+            map.SetBuildingHp(wallPos, BuildingStats.MaxHp(BuildingCatalog.Get(BuildingType.Wall), 2));
+            var enemies = new List<Enemy> { new Enemy(1, new GridPos(6, 8), 10, 1) };
+            var observedMax = 0;
+
+            GameEvents.BuildingDamaged += Handler;
+            try
+            {
+                for (var i = 0; i < 5; i++)
+                {
+                    CombatSim.Tick(map, pool, baseDefense, enemies);
+                }
+            }
+            finally
+            {
+                GameEvents.BuildingDamaged -= Handler;
+            }
+
+            Assert.That(map.GetTile(wallPos).Building, Is.EqualTo(BuildingType.Wall), "2 级围墙 15 血不应被 5 次 1 伤摧毁");
+            Assert.That(map.GetTile(wallPos).BuildingHp, Is.EqualTo(10), "15 - 5 = 10");
+            Assert.That(observedMax, Is.EqualTo(15), "受击事件应携带升级后的最大血量");
+            Assert.That(baseDefense.CurrentHp, Is.EqualTo(20));
+
+            void Handler(GridPos pos, int hp, int maxHp) => observedMax = maxHp;
+        }
     }
 }

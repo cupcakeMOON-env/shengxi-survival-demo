@@ -63,6 +63,7 @@ namespace ShengXi.Simulation
 
             var tile = _tiles[pos.X, pos.Y];
             tile.Building = building;
+            tile.BuildingLevel = 1;
             var def = BuildingCatalog.Get(building);
             tile.BuildingHp = def != null && def.MaxHp > 0 ? def.MaxHp : 1;
             return true;
@@ -78,6 +79,7 @@ namespace ShengXi.Simulation
             var tile = _tiles[pos.X, pos.Y];
             tile.Building = BuildingType.None;
             tile.BuildingHp = 0;
+            tile.BuildingLevel = 0;
         }
 
         /// <summary>读档恢复建筑血量：直接设置，不发事件。</summary>
@@ -89,6 +91,15 @@ namespace ShengXi.Simulation
             }
 
             _tiles[pos.X, pos.Y].BuildingHp = System.Math.Max(0, hp);
+        }
+
+        /// <summary>读档恢复建筑等级：直接设置，不发事件。</summary>
+        public void SetBuildingLevel(GridPos pos, int level)
+        {
+            if (IsInside(pos))
+            {
+                _tiles[pos.X, pos.Y].BuildingLevel = System.Math.Max(0, level);
+            }
         }
 
         public IEnumerable<GridPos> FindBuildingPositions(BuildingType type)

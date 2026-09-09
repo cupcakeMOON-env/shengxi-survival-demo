@@ -38,6 +38,8 @@ namespace ShengXi.Simulation
                 WoodCost = 2,
                 ActionPointCost = 1,
                 MaxHp = 10,
+                UpgradeMaterialCost = 4,
+                HpPerLevel = 5,
                 Description = "最厚的建筑：专为阻挡敌人而设，敌人会优先攻击它",
             },
             new BuildingDef
@@ -51,6 +53,9 @@ namespace ShengXi.Simulation
                 Range = 3,
                 Damage = 1,
                 FoodPerSecond = 1,
+                UpgradeMaterialCost = 6,
+                DamagePerLevel = 1,
+                HpPerLevel = 3,
                 Description = "夜晚每秒消耗 1 食物；断粮时停止攻击，恢复供给后继续",
             },
             new BuildingDef
@@ -61,7 +66,7 @@ namespace ShengXi.Simulation
                 StoneCost = 6,
                 ActionPointCost = 2,
                 MaxHp = 5,
-                Description = "加工建材（后续开放）",
+                Description = "白天每秒消耗木1+石1合成建材1；建材用于升级建筑",
             },
         };
 

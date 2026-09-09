@@ -30,6 +30,7 @@ namespace ShengXi.Simulation
                 wood = pool.GetAmount(ResourceType.Wood),
                 stone = pool.GetAmount(ResourceType.Stone),
                 food = pool.GetAmount(ResourceType.Food),
+                material = pool.GetAmount(ResourceType.Material),
                 baseX = baseDefense.Position.X,
                 baseY = baseDefense.Position.Y,
                 baseHp = baseDefense.CurrentHp,
@@ -50,6 +51,7 @@ namespace ShengXi.Simulation
                         resourceAmount = tile.ResourceAmount,
                         building = (int)tile.Building,
                         buildingHp = tile.BuildingHp,
+                        level = tile.BuildingLevel,
                     });
                 }
             }
@@ -96,6 +98,7 @@ namespace ShengXi.Simulation
                 }
 
                 map.Place(building, new GridPos(t.x, t.y));
+                map.SetBuildingLevel(new GridPos(t.x, t.y), t.level);
                 map.SetBuildingHp(new GridPos(t.x, t.y), t.buildingHp);
             }
 
@@ -105,7 +108,7 @@ namespace ShengXi.Simulation
         public static ResourcePool RebuildPool(SaveData data)
         {
             var pool = new ResourcePool();
-            pool.Restore(data.wood, data.stone, data.food, data.capacity);
+            pool.Restore(data.wood, data.stone, data.food, data.capacity, data.material);
             return pool;
         }
 

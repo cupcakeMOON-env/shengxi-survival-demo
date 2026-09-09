@@ -17,6 +17,9 @@ namespace ShengXi.Simulation
         public int Range;                  // 攻击类建筑：射程（曼哈顿距离，单位=格）
         public int Damage;                 // 攻击类建筑：每 tick 伤害
         public int FoodPerSecond;          // 夜晚防御类建筑的食物供给消耗（0 = 不需要食物）
+        public int UpgradeMaterialCost;    // 升一级消耗的建材数（>0 表示可升级）
+        public int DamagePerLevel;         // 每升一级额外伤害
+        public int HpPerLevel;             // 每升一级额外最大血量
         public bool RequiresResourceTile;  // 采集站：必须建在有剩余资源的资源格上
         public string Description;
     }

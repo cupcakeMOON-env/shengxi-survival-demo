@@ -77,6 +77,24 @@ namespace ShengXi.Tests.Editor
         }
 
         [Test]
+        public void Demolish_UpgradedWall_RefundsHalfUpgradeMaterial()
+        {
+            var (map, pool, ap) = Setup();
+            pool.Add(ResourceType.Material, 20);
+            var pos = new GridPos(3, 3);
+            Assert.That(BuildService.TryBuild(map, pool, ap, BuildingCatalog.Get(BuildingType.Wall), pos), Is.True);
+            Assert.That(UpgradeService.TryUpgrade(map, pool, ap, pos), Is.True, "应先能升到 2 级");
+            Assert.That(map.GetTile(pos).BuildingLevel, Is.EqualTo(2));
+            Assert.That(pool.GetAmount(ResourceType.Material), Is.EqualTo(16), "围墙升级消耗 4 建材");
+
+            Assert.That(DemolishService.TryDemolish(map, pool, pos), Is.True);
+
+            Assert.That(map.GetTile(pos).Building, Is.EqualTo(BuildingType.None));
+            Assert.That(map.GetTile(pos).BuildingLevel, Is.Zero, "拆除后等级应清零");
+            Assert.That(pool.GetAmount(ResourceType.Material), Is.EqualTo(18), "投入的 4 建材应返还 50% = 2");
+        }
+
+        [Test]
         public void Demolish_Warehouse_ReducesCapacityAndRefundsHalf()
         {
             var (map, pool, ap) = Setup();

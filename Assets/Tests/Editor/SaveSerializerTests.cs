@@ -15,6 +15,7 @@ namespace ShengXi.Tests.Editor
             pool.Add(ResourceType.Stone, 7);
             pool.Add(ResourceType.Food, 3);
             pool.Add(ResourceType.Material, 9);
+            pool.Add(ResourceType.RepairKit, 4);
             var ap = new ActionPointSystem(10);
             ap.Spend(4);
             var cycle = new DayCycle();
@@ -36,6 +37,7 @@ namespace ShengXi.Tests.Editor
             Assert.That(pool2.GetAmount(ResourceType.Stone), Is.EqualTo(7));
             Assert.That(pool2.GetAmount(ResourceType.Food), Is.EqualTo(3));
             Assert.That(pool2.GetAmount(ResourceType.Material), Is.EqualTo(9), "建材应随存档往返");
+            Assert.That(pool2.GetAmount(ResourceType.RepairKit), Is.EqualTo(4), "修理包应随存档往返");
             Assert.That(pool2.Capacity, Is.EqualTo(300));
             Assert.That(ap2.Current, Is.EqualTo(6));
             Assert.That(cycle2.IsNight, Is.True);
@@ -87,6 +89,7 @@ namespace ShengXi.Tests.Editor
             Assert.That(upgraded.version, Is.EqualTo(SaveMigrator.CurrentVersion));
             Assert.That(upgraded.food, Is.Zero);
             Assert.That(upgraded.material, Is.Zero);
+            Assert.That(upgraded.repairKit, Is.Zero);
             Assert.That(upgraded.capacity, Is.EqualTo(100));
             Assert.That(upgraded.tiles, Is.Not.Null);
             Assert.That(upgraded.enemies, Is.Not.Null);
@@ -138,6 +141,22 @@ namespace ShengXi.Tests.Editor
             Assert.That(upgraded.tiles[0].level, Is.EqualTo(1), "旧建筑升级路径补为 1 级");
             Assert.That(upgraded.tiles[0].buildingHp, Is.EqualTo(7), "迁移不应改动已存的建筑血量");
             Assert.That(upgraded.tiles[1].level, Is.Zero);
+        }
+
+        [Test]
+        public void Migrator_UpgradesV3Save_AddsRepairKit()
+        {
+            var old = new SaveData
+            {
+                version = 3,
+                material = 6,
+            };
+
+            var upgraded = SaveMigrator.Upgrade(old);
+
+            Assert.That(upgraded.version, Is.EqualTo(SaveMigrator.CurrentVersion));
+            Assert.That(upgraded.material, Is.EqualTo(6), "v3 已有建材，迁移应保留");
+            Assert.That(upgraded.repairKit, Is.Zero, "v3 没有修理包，迁移后应为 0");
         }
 
         [Test]

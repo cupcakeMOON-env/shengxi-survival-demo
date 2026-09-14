@@ -45,6 +45,7 @@ namespace ShengXi.View
             GameEvents.BuildingPlaced += OnBuildingPlaced;
             GameEvents.BuildingRemoved += OnBuildingRemoved;
             GameEvents.BuildingDamaged += OnBuildingDamaged;
+            GameEvents.BuildingRepaired += OnBuildingRepaired;
             GameEvents.BuildingSupplyChanged += OnBuildingSupplyChanged;
             GameEvents.BuildingUpgraded += OnBuildingUpgraded;
 
@@ -62,6 +63,7 @@ namespace ShengXi.View
             GameEvents.BuildingPlaced -= OnBuildingPlaced;
             GameEvents.BuildingRemoved -= OnBuildingRemoved;
             GameEvents.BuildingDamaged -= OnBuildingDamaged;
+            GameEvents.BuildingRepaired -= OnBuildingRepaired;
             GameEvents.BuildingSupplyChanged -= OnBuildingSupplyChanged;
             GameEvents.BuildingUpgraded -= OnBuildingUpgraded;
         }
@@ -100,6 +102,17 @@ namespace ShengXi.View
         }
 
         private void OnBuildingDamaged(GridPos pos, int currentHp, int maxHp)
+        {
+            if (_healthBars.TryGetValue(pos, out var bar))
+            {
+                bar.SetRatio(maxHp > 0 ? (float)currentHp / maxHp : 0f);
+            }
+
+            FlashTile(pos);
+        }
+
+        /// <summary>修理完成：血条回到满格并闪一下，给玩家正反馈。</summary>
+        private void OnBuildingRepaired(GridPos pos, int currentHp, int maxHp)
         {
             if (_healthBars.TryGetValue(pos, out var bar))
             {

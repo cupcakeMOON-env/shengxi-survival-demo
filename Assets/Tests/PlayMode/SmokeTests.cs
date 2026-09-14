@@ -262,6 +262,43 @@ namespace ShengXi.Tests.PlayMode
             Assert.That(buttonCount, Is.GreaterThanOrEqualTo(9), "底部应有全部功能按钮");
         }
 
+        [UnityTest]
+        public IEnumerator Repair_Runtime_HealsBuildingAndBase()
+        {
+            yield return null;
+            GameLoop.Instance.NewGame();
+            yield return null;
+            var loop = GameLoop.Instance;
+            Assert.That(ConfirmBaseAtWalkable(loop), Is.True, "应能放置据点");
+
+            var buildSpot = FindBuildableTile(loop.Map);
+            Assert.That(buildSpot.HasValue, Is.True, "应有可建造位置");
+            var warehousePos = buildSpot.Value;
+            Assert.That(
+                BuildService.TryBuild(loop.Map, loop.Pool, loop.ActionPoints,
+                    BuildingCatalog.Get(BuildingType.Warehouse), warehousePos),
+                Is.True,
+                "应能建造仓库");
+
+            loop.Map.SetBuildingHp(warehousePos, 2); // 模拟夜晚被打残
+            loop.Pool.Add(ResourceType.RepairKit, 2);
+            Assert.That(
+                RepairService.TryRepairBuilding(loop.Map, loop.Pool, loop.ActionPoints, warehousePos),
+                Is.True,
+                "应能用修理包修满建筑");
+            Assert.That(loop.Pool.GetAmount(ResourceType.RepairKit), Is.EqualTo(1), "应消耗 1 修理包");
+            yield return null;
+            Assert.That(
+                loop.Map.GetTile(warehousePos).BuildingHp,
+                Is.EqualTo(BuildingCatalog.Get(BuildingType.Warehouse).MaxHp),
+                "建筑应回满血");
+
+            loop.Base.TakeDamage(9);
+            Assert.That(RepairService.TryRepairBase(loop.Base, loop.Pool, loop.ActionPoints), Is.True, "应能修满据点");
+            Assert.That(loop.Base.CurrentHp, Is.EqualTo(loop.Base.MaxHp), "据点应回满血");
+            Assert.That(loop.Pool.GetAmount(ResourceType.RepairKit), Is.Zero);
+        }
+
         private static GridPos? FindResourceTile(GridMap map, TerrainType terrain)
         {
             for (var x = 0; x < map.Width; x++)

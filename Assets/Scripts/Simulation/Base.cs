@@ -30,6 +30,18 @@ namespace ShengXi.Simulation
             GameEvents.RaiseBaseHpChanged(CurrentHp, MaxHp);
         }
 
+        /// <summary>修理：恢复至满血并发事件（由 RepairService 消耗修理包后调用）。</summary>
+        public void RepairToFull()
+        {
+            if (CurrentHp >= MaxHp)
+            {
+                return;
+            }
+
+            CurrentHp = MaxHp;
+            GameEvents.RaiseBaseHpChanged(CurrentHp, MaxHp);
+        }
+
         /// <summary>读档恢复：直接设置血量，不发事件。</summary>
         public void Restore(int hp)
         {

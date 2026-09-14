@@ -5,8 +5,9 @@ using UnityEngine;
 namespace ShengXi.View
 {
     /// <summary>
-    /// 建造/拆除模式：持有当前选中的建筑定义（或拆除标记），鼠标悬停时在目标格显示红/绿幽灵预览。
-    /// 绿色=可以建造/拆除，红色=不能（建造：资源不足/行动点不足/位置非法；拆除：据点不可拆）。
+    /// 建造/拆除/升级/修理模式：持有当前选中的建筑定义（或某个功能标记），
+    /// 鼠标悬停时在目标格显示红/绿幽灵预览。
+    /// 绿色=该操作可行，红色=不可行（资源/行动点不足、目标非法等）。
     /// </summary>
     public class BuildModeController : MonoBehaviour
     {
@@ -17,6 +18,7 @@ namespace ShengXi.View
         public BuildingDef ActiveDef { get; private set; }
         public bool IsDemolishing { get; private set; }
         public bool IsUpgrading { get; private set; }
+        public bool IsRepairing { get; private set; }
 
         public void Initialize(Camera camera)
         {
@@ -32,6 +34,7 @@ namespace ShengXi.View
             {
                 IsDemolishing = false;
                 IsUpgrading = false;
+                IsRepairing = false;
             }
         }
 
@@ -43,6 +46,7 @@ namespace ShengXi.View
             {
                 ActiveDef = null;
                 IsUpgrading = false;
+                IsRepairing = false;
             }
         }
 
@@ -54,6 +58,19 @@ namespace ShengXi.View
             {
                 ActiveDef = null;
                 IsDemolishing = false;
+                IsRepairing = false;
+            }
+        }
+
+        /// <summary>切换修理模式：再次点击关闭，切建造/拆除/升级时自动退出。</summary>
+        public void SetRepairActive()
+        {
+            IsRepairing = !IsRepairing;
+            if (IsRepairing)
+            {
+                ActiveDef = null;
+                IsDemolishing = false;
+                IsUpgrading = false;
             }
         }
 
@@ -62,6 +79,7 @@ namespace ShengXi.View
             ActiveDef = null;
             IsDemolishing = false;
             IsUpgrading = false;
+            IsRepairing = false;
         }
 
         private void Update()
@@ -71,7 +89,7 @@ namespace ShengXi.View
                 !GameLoop.Instance.Cycle.IsDay ||
                 GameLoop.Instance.IsChoosingBase ||
                 _camera == null ||
-                (ActiveDef == null && !IsDemolishing && !IsUpgrading))
+                (ActiveDef == null && !IsDemolishing && !IsUpgrading && !IsRepairing))
             {
                 if (_ghostCreated)
                 {
@@ -106,6 +124,41 @@ namespace ShengXi.View
                 _ghost.gameObject.SetActive(true);
                 _ghost.transform.position = new Vector3(pos.X, pos.Y, -0.5f);
                 _ghost.color = UpgradeService.CanUpgrade(
+                    GameLoop.Instance.Map,
+                    GameLoop.Instance.Pool,
+                    GameLoop.Instance.ActionPoints,
+                    pos)
+                    ? new Color(0f, 1f, 0f, 0.45f)
+                    : new Color(1f, 0f, 0f, 0.45f);
+                return;
+            }
+
+            if (IsRepairing)
+            {
+                var baseDefense = GameLoop.Instance.Base;
+                if (baseDefense != null && baseDefense.Position == pos)
+                {
+                    _ghost.gameObject.SetActive(true);
+                    _ghost.transform.position = new Vector3(pos.X, pos.Y, -0.5f);
+                    _ghost.color = RepairService.CanRepairBase(
+                        baseDefense,
+                        GameLoop.Instance.Pool,
+                        GameLoop.Instance.ActionPoints)
+                        ? new Color(0f, 1f, 0f, 0.45f)
+                        : new Color(1f, 0f, 0f, 0.45f);
+                    return;
+                }
+
+                var repairTile = GameLoop.Instance.Map.GetTile(pos);
+                if (repairTile == null || repairTile.Building == BuildingType.None)
+                {
+                    _ghost.gameObject.SetActive(false);
+                    return;
+                }
+
+                _ghost.gameObject.SetActive(true);
+                _ghost.transform.position = new Vector3(pos.X, pos.Y, -0.5f);
+                _ghost.color = RepairService.CanRepairBuilding(
                     GameLoop.Instance.Map,
                     GameLoop.Instance.Pool,
                     GameLoop.Instance.ActionPoints,

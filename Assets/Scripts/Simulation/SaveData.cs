@@ -9,7 +9,7 @@ namespace ShengXi.Simulation
     [Serializable]
     public class SaveData
     {
-        public int version = 3;
+        public int version = 4;
         public int seed;
         public int width;
         public int height;
@@ -21,6 +21,7 @@ namespace ShengXi.Simulation
         public int stone;
         public int food;
         public int material; // 建材：工坊产物，v3 加入
+        public int repairKit; // 修理包：工坊产物，v4 加入
         public int baseX;
         public int baseY;
         public int baseHp;

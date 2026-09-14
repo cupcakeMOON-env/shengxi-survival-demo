@@ -41,6 +41,8 @@ namespace ShengXi.UI
 
             x = CreateButton(barRoot.transform, x, "升级", () => _buildMode.SetUpgradeActive());
 
+            x = CreateButton(barRoot.transform, x, "修理", () => _buildMode.SetRepairActive());
+
             x = CreateButton(barRoot.transform, x, "进入夜晚", () =>
             {
                 if (GameLoop.Instance != null)

@@ -7,7 +7,7 @@ namespace ShengXi.UI
 {
     /// <summary>
     /// 顶部资源栏：平时只显示一个仓库图标按钮，点击后展开资源面板
-    /// （木头/石头/食物/建材 + 容量、行动点），再次点击收起。
+    /// （木头/石头/食物/建材/修理包 + 容量、行动点），再次点击收起。
     /// 只订阅 ResourceChanged / ActionPointsChanged 事件刷新文字，
     /// 不轮询、不碰模拟数据；运行时代码搭建 UI，不需要场景或美术资产。
     /// 仓库图标用代码逐像素画进 Texture2D，保持占位美术风格。
@@ -25,6 +25,7 @@ namespace ShengXi.UI
         private Text _stoneText;
         private Text _foodText;
         private Text _materialText;
+        private Text _repairKitText;
         private Text _actionPointText;
         private GameObject _panel;
         private ResourcePool _pool;
@@ -43,7 +44,8 @@ namespace ShengXi.UI
             _stoneText = CreateRow(_panel.transform, "StoneRow", 1, new Color(0.60f, 0.60f, 0.64f), "石头");
             _foodText = CreateRow(_panel.transform, "FoodRow", 2, new Color(0.85f, 0.42f, 0.35f), "食物");
             _materialText = CreateRow(_panel.transform, "MaterialRow", 3, new Color(0.42f, 0.62f, 0.85f), "建材");
-            _actionPointText = CreateRow(_panel.transform, "ActionPointRow", 4, new Color(0.95f, 0.80f, 0.30f), "行动点");
+            _repairKitText = CreateRow(_panel.transform, "RepairKitRow", 4, new Color(0.88f, 0.68f, 0.38f), "修理包");
+            _actionPointText = CreateRow(_panel.transform, "ActionPointRow", 5, new Color(0.95f, 0.80f, 0.30f), "行动点");
 
             button.onClick.AddListener(TogglePanel);
             _panel.SetActive(false);
@@ -93,6 +95,7 @@ namespace ShengXi.UI
             _stoneText.text = $"石头  {_pool.GetAmount(ResourceType.Stone)}/{_pool.Capacity}";
             _foodText.text = $"食物  {_pool.GetAmount(ResourceType.Food)}/{_pool.Capacity}";
             _materialText.text = $"建材  {_pool.GetAmount(ResourceType.Material)}/{_pool.Capacity}";
+            _repairKitText.text = $"修理包  {_pool.GetAmount(ResourceType.RepairKit)}/{_pool.Capacity}";
             _actionPointText.text = GameLoop.Instance != null
                 ? $"行动点  {GameLoop.Instance.ActionPoints.Current}/{GameLoop.Instance.ActionPoints.MaxPerDay}"
                 : "行动点  -";
@@ -142,7 +145,7 @@ namespace ShengXi.UI
             rt.pivot = new Vector2(0f, 1f);
             // 紧贴按钮正下方：顶边 y = -Margin - ButtonSize - 8
             rt.anchoredPosition = new Vector2(Margin, -(Margin + ButtonSize + 8f));
-            rt.sizeDelta = new Vector2(PanelWidth, 5f * RowHeight + 24f);
+            rt.sizeDelta = new Vector2(PanelWidth, 6f * RowHeight + 24f);
 
             var bg = go.GetComponent<Image>();
             bg.color = new Color(0f, 0f, 0f, 0.55f);

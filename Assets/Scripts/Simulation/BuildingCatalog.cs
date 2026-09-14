@@ -66,7 +66,7 @@ namespace ShengXi.Simulation
                 StoneCost = 6,
                 ActionPointCost = 2,
                 MaxHp = 5,
-                Description = "白天每秒消耗木1+石1合成建材1；建材用于升级建筑",
+                Description = "白天每秒合成建材（木1+石1）与修理包（木1+食物1）；建材升级、修理包修理",
             },
         };
 

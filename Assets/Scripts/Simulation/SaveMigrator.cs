@@ -8,7 +8,7 @@ namespace ShengXi.Simulation
     /// </summary>
     public static class SaveMigrator
     {
-        public const int CurrentVersion = 3;
+        public const int CurrentVersion = 4;
 
         public static SaveData Upgrade(SaveData data)
         {
@@ -57,6 +57,13 @@ namespace ShengXi.Simulation
                 }
 
                 data.version = 3;
+            }
+
+            if (data.version < 4)
+            {
+                // v3 → v4：资源池新增修理包。旧档没有该字段，JsonUtility 反序列化后即为 0，
+                // 这里只做版本推进（语义等价于修理包 0）。
+                data.version = 4;
             }
 
             if (data.tiles == null)

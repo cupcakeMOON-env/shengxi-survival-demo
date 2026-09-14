@@ -104,6 +104,14 @@ namespace ShengXi.View
                     pos);
                 Debug.Log($"[TileClickInput] 升级 grid={pos} ok={upgraded}");
             }
+            else if (_buildMode != null && _buildMode.IsRepairing)
+            {
+                var loop = GameLoop.Instance;
+                var repaired = loop.Base != null && loop.Base.Position == pos
+                    ? RepairService.TryRepairBase(loop.Base, loop.Pool, loop.ActionPoints)
+                    : RepairService.TryRepairBuilding(loop.Map, loop.Pool, loop.ActionPoints, pos);
+                Debug.Log($"[TileClickInput] 修理 grid={pos} ok={repaired}");
+            }
             // 无建造/拆除模式时点击不做事：采集由采集站自动完成，不再支持手动点击采集
         }
     }

@@ -31,6 +31,7 @@ namespace ShengXi.Simulation
                 stone = pool.GetAmount(ResourceType.Stone),
                 food = pool.GetAmount(ResourceType.Food),
                 material = pool.GetAmount(ResourceType.Material),
+                repairKit = pool.GetAmount(ResourceType.RepairKit),
                 baseX = baseDefense.Position.X,
                 baseY = baseDefense.Position.Y,
                 baseHp = baseDefense.CurrentHp,
@@ -108,7 +109,7 @@ namespace ShengXi.Simulation
         public static ResourcePool RebuildPool(SaveData data)
         {
             var pool = new ResourcePool();
-            pool.Restore(data.wood, data.stone, data.food, data.capacity, data.material);
+            pool.Restore(data.wood, data.stone, data.food, data.capacity, data.material, data.repairKit);
             return pool;
         }
 

@@ -24,16 +24,18 @@ rts-demo
 | 操作 | 说明 |
 |---|---|
 | 左键点击 | 开局选址：直接落定据点（金色=可放/红色=不可）；白天：建造模式下放置建筑、拆除模式下拆除 |
-| 底部菜单 | 选择建筑、拆除、升级、进入夜晚、存档、读档（悬停红/绿预览） |
+| 底部菜单 | 选择建筑、拆除、升级、修理、进入夜晚、存档、读档（悬停红/绿预览） |
 | 进入夜晚 | 刷出当晚敌人，自动战斗，清场后回白天、行动点重置 |
 
 ## 玩法规则
 
-- 4 种资源：木头、石头、食物、建材；开局自带木头20、石头15；资源靠采集站自动采集（手动点击采集已移除）；容量默认 100，仓库 +100，仓库被拆/被摧毁时容量回落
+- 5 种资源：木头、石头、食物、建材、修理包；开局自带木头20、石头15；资源靠采集站自动采集（手动点击采集已移除）；容量默认 100，仓库 +100，仓库被拆/被摧毁时容量回落
 - 行动点每天 10 点，建造消耗，每晚结束自动重置；拆除不消耗行动点
 - 5 种建筑：采集站（建在资源格上自动采集）、仓库（容量+100）、围墙（最厚的阻挡建筑）、箭塔（曼哈顿射程 3、伤害 1，数值在 BuildingCatalog）、工坊（白天自动合成建材）
-- 工坊生产链：工坊白天每秒消耗 木1+石1 合成 建材1（配方在 CraftingCatalog，产出受仓库容量约束）；建材 + 行动点可升级箭塔/围墙（当前最高 3 级）
+- 工坊生产链：工坊白天并行跑两条配方——木1+石1 → 建材1、木1+食物1 → 修理包1（配方在 CraftingCatalog，每条产线独立判定原料与容量）
+- 建材 + 行动点可升级箭塔/围墙（当前最高 3 级）
 - 建筑升级：箭塔每级 +1 伤害、围墙每级 +5 血（BuildingDef 的 UpgradeMaterialCost/HpPerLevel/DamagePerLevel，BuildingStats 统一换算）；升级同时把建筑整修至新等级满血；拆除升级建筑返还 50% 已投入建材
+- 修理：白天消耗 1 修理包 + 1 行动点，可把残血建筑或据点直接修满（RepairService）；不可升级的仓库/采集站/工坊也靠这条规则恢复
 - 食物供给：箭塔夜晚战斗期间每秒消耗 1 食物（BuildingDef.FoodPerSecond）；食物不足时箭塔断粮停火（格子变灰），恢复供给后自动复工
 - 建筑血量（BuildingDef.MaxHp）：围墙 10，采集站/仓库/箭塔/工坊 5；敌人贴身攻击，归零即摧毁并撤销效果
 - 拆除建筑：白天任意拆（据点除外）、返还 50% 造价、仓库容量加成同步撤销
@@ -56,7 +58,7 @@ rts-demo
 │  GridMap/Tile  ResourcePool  ActionPointSystem  DayCycle    │
 │  BuildService  DemolishService  CollectService  CombatSim   │
 │  CollectorSystem  ProductionSystem  FoodSupplySystem  WaveScheduler         │
-│  Pathfinding  UpgradeService  BuildingStats  CraftingCatalog  SaveMigrator  │
+│  Pathfinding  UpgradeService  RepairService  BuildingStats  CraftingCatalog │
 │  SaveSerializer  SaveData  BuildingDef  BuildingCatalog                     │
 └───────────────┬─────────────────────────────────────────────┘
                 │ 数据驱动
@@ -71,8 +73,8 @@ rts-demo
 
 ## 测试
 
-- EditMode：Window → General → Test Runner → EditMode → Run All（当前 123 项）
-- PlayMode 冒烟：Test Runner → PlayMode → Run All（当前 5 项；覆盖运行时装配层：引导、日夜循环、存读档、拆除、按钮可见性）
+- EditMode：Window → General → Test Runner → EditMode → Run All（当前 136 项）
+- PlayMode 冒烟：Test Runner → PlayMode → Run All（当前 6 项；覆盖运行时装配层：引导、日夜循环、存读档、拆除、修理、按钮可见性）
 - 模拟层脱离 Unity 独立验证：`dotnet run --project C:\Users\林好\ShengXiSimulationVerify\SimulationVerify.csproj`
 
 ## 设计取舍 FAQ
@@ -104,3 +106,4 @@ Tilemap 绑定 GameObject 与生命周期，难测试、难存档；`GridMap` �
 | M5 | 存档/读档、版本迁移、测试、README | ✅ |
 | 后续迭代 | 拆除建筑、敌人优先攻击建筑、建筑血量、存档 v2、按钮条可见性修复 | ✅ |
 | M9 | 工坊生产链（木+石→建材）、建筑升级（箭塔/围墙）、存档 v3 | ✅ |
+| M10 | 多配方并行（+修理包）、修理建筑与据点、存档 v4 | ✅ |

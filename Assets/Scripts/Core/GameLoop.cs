@@ -55,6 +55,7 @@ namespace ShengXi.Core
             GameEvents.RaiseResourceChanged(ResourceType.Stone, 0);
             GameEvents.RaiseResourceChanged(ResourceType.Food, 0);
             GameEvents.RaiseResourceChanged(ResourceType.Material, 0);
+            GameEvents.RaiseResourceChanged(ResourceType.RepairKit, 0);
             GameEvents.RaiseActionPointsChanged(ActionPoints.Current, ActionPoints.MaxPerDay);
             GameEvents.RaiseDayChanged(Cycle.Day);
             GameEvents.RaisePhaseChanged(Cycle.Phase);
@@ -169,6 +170,7 @@ namespace ShengXi.Core
             GameEvents.RaiseResourceChanged(ResourceType.Stone, Pool.GetAmount(ResourceType.Stone));
             GameEvents.RaiseResourceChanged(ResourceType.Food, Pool.GetAmount(ResourceType.Food));
             GameEvents.RaiseResourceChanged(ResourceType.Material, Pool.GetAmount(ResourceType.Material));
+            GameEvents.RaiseResourceChanged(ResourceType.RepairKit, Pool.GetAmount(ResourceType.RepairKit));
             GameEvents.RaiseActionPointsChanged(ActionPoints.Current, ActionPoints.MaxPerDay);
             GameEvents.RaiseDayChanged(Cycle.Day);
             GameEvents.RaisePhaseChanged(Cycle.Phase);

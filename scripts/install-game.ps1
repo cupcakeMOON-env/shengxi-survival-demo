@@ -10,7 +10,7 @@ if (Test-Path -LiteralPath $exe) {
     exit 0
 }
 
-$url = "https://github.com/cupcakeMOON-env/rts-demo/releases/download/$version/ShengXiSurvivalDemo-Win64.zip"
+$url = "https://github.com/cupcakeMOON-env/shengxi-survival-demo/releases/download/$version/ShengXiSurvivalDemo-Win64.zip"
 $zip = Join-Path $env:TEMP "rts-demo-$version.zip"
 
 Write-Host "[rts-demo] 正在从 GitHub Release 下载游戏（约 33MB）..."

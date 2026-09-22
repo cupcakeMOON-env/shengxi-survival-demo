@@ -23,7 +23,7 @@
 ### 方式一：不装 Unity 直接玩（Windows）
 
 ```bash
-npm install -g https://codeload.github.com/cupcakeMOON-env/rts-demo/tar.gz/v1.0.0
+npm install -g https://codeload.github.com/cupcakeMOON-env/shengxi-survival-demo/tar.gz/v1.0.0
 rts-demo
 ```
 

@@ -9,6 +9,6 @@ const result = spawnSync(
 );
 
 if (result.status !== 0) {
-  console.error("[rts-demo] 游戏下载安装失败，请检查网络后重试。");
+  console.error("[shengxi-demo] 游戏下载安装失败，请检查网络后重试。");
   process.exit(result.status === null ? 1 : result.status);
 }

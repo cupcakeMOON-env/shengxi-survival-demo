@@ -23,11 +23,11 @@
 ### 方式一：不装 Unity 直接玩（Windows）
 
 ```bash
-npm install -g https://codeload.github.com/cupcakeMOON-env/shengxi-survival-demo/tar.gz/v1.0.0
-rts-demo
+npm install -g https://codeload.github.com/cupcakeMOON-env/shengxi-survival-demo/tar.gz/v1.1.0
+shengxi-demo
 ```
 
-安装时包装脚本会从 GitHub Release 下载约 33MB 的 Windows 独立包到本机，之后 `rts-demo` 命令直接启动游戏。仓库根目录的 `package.json` / `bin/` / `scripts/` 就是这套 npm 包装（它不参与 Unity 工程编译）。
+安装时包装脚本会从 GitHub Release 下载约 33MB 的 Windows 独立包到本机，之后 `shengxi-demo` 命令直接启动游戏。仓库根目录的 `package.json` / `bin/` / `scripts/` 就是这套 npm 包装（它不参与 Unity 工程编译）。
 
 ### 方式二：用 Unity 打开工程
 

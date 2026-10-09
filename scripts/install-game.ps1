@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 $root = Split-Path -Parent $PSScriptRoot
 $gameDir = Join-Path $root "game"
 $exe = Join-Path $gameDir "ShengXiSurvivalDemo.exe"
-$version = "v1.1.0"
+$version = "v1.2.0"
 
 if (Test-Path -LiteralPath $exe) {
     Write-Host "[shengxi-demo] 游戏已就绪：$exe"

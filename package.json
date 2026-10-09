@@ -1,6 +1,6 @@
 {
   "name": "shengxi-demo",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "ShengXi Survival Demo (Windows) - npm wrapper that downloads the game from GitHub Releases and launches it",
   "license": "UNLICENSED",
   "private": false,

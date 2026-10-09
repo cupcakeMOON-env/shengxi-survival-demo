@@ -1,7 +1,7 @@
 namespace ShengXi.Simulation
 {
     /// <summary>
-    /// 拆除服务：校验 → 返还一半造价 → 撤销建筑效果（如仓库容量）→ 清除格子 → 发事件。
+    /// 拆除服务：校验 → 返还一半造价（不足 1 的部分向上取整）→ 撤销建筑效果（如仓库容量）→ 清除格子 → 发事件。
     /// 纯 C#，可单测；GridMap.RemoveBuilding 是底层操作，这里补全资源 / 行动点 / 效果 / 事件闭环。
     /// 拆除不消耗行动点（2026-08-28 调整）；只能在白天进行（由上层 BuildModeController / TileClickInput 保证），据点不可拆除。
     /// </summary>
@@ -73,11 +73,27 @@ namespace ShengXi.Simulation
 
         private static void Refund(ResourcePool pool, ResourceType type, int cost)
         {
-            var refund = cost * RefundPercent / 100;
+            var refund = CeilPercent(cost, RefundPercent);
             if (refund > 0)
             {
                 pool.Add(type, refund);
             }
+        }
+
+        /// <summary>
+        /// 按百分比向上取整：木 5 的 50% 是 2.5，返 3 而不是 2。
+        /// 用向上取整而不是直接截断，是为了不让「拆了重建」每次都白丢半份材料
+        /// （奇数造价才会差这 1 个，偶数造价两种算法结果相同）。
+        /// 只要 RefundPercent 不超过 100，向上取整也不会产生拆建套利：返还永远少于造价。
+        /// </summary>
+        public static int CeilPercent(int amount, int percent)
+        {
+            if (amount <= 0 || percent <= 0)
+            {
+                return 0;
+            }
+
+            return (amount * percent + 99) / 100;
         }
     }
 }

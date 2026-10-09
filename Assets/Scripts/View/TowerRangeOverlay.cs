@@ -27,14 +27,20 @@ namespace ShengXi.View
         private void Update()
         {
             var loop = GameLoop.Instance;
-            if (loop == null || loop.GameOver || _camera == null)
+            if (loop == null || !loop.HasWorld || loop.GameOver || _camera == null)
             {
                 Clear();
                 return;
             }
 
-            var world = _camera.ScreenToWorldPoint(Input.mousePosition);
-            var hovered = new GridPos(Mathf.FloorToInt(world.x), Mathf.FloorToInt(world.y));
+            var picked = GridPicking.ScreenToGrid(_camera, Input.mousePosition);
+            if (!picked.HasValue)
+            {
+                Clear();
+                return;
+            }
+
+            var hovered = picked.Value;
             var tile = loop.Map.GetTile(hovered);
 
             BuildingDef def = null;

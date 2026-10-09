@@ -13,8 +13,10 @@ namespace ShengXi.Simulation
             {
                 Type = BuildingType.Collector,
                 Name = "采集站",
+                // 只要木材，不要石头：采集站是唯一的资源来源，
+                // 一旦要求石头就会出现「石头花光 → 造不出采集站 → 更采不到石头」的死锁。
+                // 木材开局自带、且森林格分布最广，所以它才是唯一能托底的那一种资源。
                 WoodCost = 5,
-                StoneCost = 3,
                 ActionPointCost = 1,
                 MaxHp = 5,
                 RequiresResourceTile = true,

@@ -87,5 +87,18 @@ namespace ShengXi.Tests.Editor
                     $"{def.Type} 的 FoodPerSecond 应为 {expected}（当前只有箭塔会消耗食物）");
             }
         }
+
+        [Test]
+        public void Collector_CostsWoodOnly()
+        {
+            var collector = BuildingCatalog.Get(BuildingType.Collector);
+
+            Assert.That(collector.WoodCost, Is.GreaterThan(0), "采集站仍然要花木材");
+            Assert.That(
+                collector.StoneCost,
+                Is.Zero,
+                "采集站是唯一的资源来源，不能要石头：否则石头花光后就再也造不出采集站，整局卡死");
+            Assert.That(collector.FoodCost, Is.Zero, "采集站不能要食物，食物同样只能靠采集站产出");
+        }
     }
 }

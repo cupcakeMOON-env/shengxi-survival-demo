@@ -9,7 +9,7 @@ namespace ShengXi.Simulation
     [Serializable]
     public class SaveData
     {
-        public int version = 4;
+        public int version = 5;
         public int seed;
         public int width;
         public int height;
@@ -40,6 +40,8 @@ namespace ShengXi.Simulation
         public int building;
         public int buildingHp;
         public int level; // 建筑等级：v3 加入（无建筑为 0）
+        public bool producing; // 工坊是否开工：v5 加入（旧档迁移为 true，非工坊恒为 true）
+        public string[] disabledRecipes; // 被关闭的配方 Id：v5 加入（旧档为空数组）
     }
 
     [Serializable]

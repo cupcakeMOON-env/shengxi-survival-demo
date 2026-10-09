@@ -109,7 +109,7 @@ namespace ShengXi.Tests.Editor
             Assert.That(map.GetTile(pos).Building, Is.EqualTo(BuildingType.None));
             Assert.That(pool.Capacity, Is.EqualTo(ResourcePool.DefaultCapacity));
             Assert.That(pool.GetAmount(ResourceType.Wood), Is.EqualTo(woodBefore + 5), "木10 应返还 5");
-            Assert.That(pool.GetAmount(ResourceType.Stone), Is.EqualTo(stoneBefore + 2), "石5 应返还 2");
+            Assert.That(pool.GetAmount(ResourceType.Stone), Is.EqualTo(stoneBefore + 3), "石5 的 50% = 2.5，向上取整返 3");
         }
 
         [Test]
@@ -145,7 +145,7 @@ namespace ShengXi.Tests.Editor
             Assert.That(map.GetTile(forest).Building, Is.EqualTo(BuildingType.None));
             Assert.That(map.GetTile(forest).ResourceAmount, Is.EqualTo(resourceLeft), "拆除不应消耗资源格余量");
             Assert.That(pool.GetAmount(ResourceType.Wood), Is.EqualTo(woodAfterDemolish), "拆除后采集站不应再产出");
-            Assert.That(pool.GetAmount(ResourceType.Wood), Is.EqualTo(98), "96 + 木5 返还 50% = 2");
+            Assert.That(pool.GetAmount(ResourceType.Wood), Is.EqualTo(99), "96 + 木5 的 50% 向上取整 = 3");
         }
 
         [Test]
@@ -177,6 +177,42 @@ namespace ShengXi.Tests.Editor
             Assert.That(DemolishService.TryDemolish(null, pool, new GridPos(0, 0)), Is.False);
             Assert.That(DemolishService.TryDemolish(map, null, new GridPos(0, 0)), Is.False);
             Assert.That(DemolishService.CanDemolish(null, new GridPos(0, 0)), Is.False);
+        }
+
+        [Test]
+        public void Refund_RoundsUp_SoNoFractionIsLost()
+        {
+            // 50% 向上取整：偶数造价与截断结果一致，奇数造价多返 1
+            Assert.That(DemolishService.CeilPercent(1, 50), Is.EqualTo(1));
+            Assert.That(DemolishService.CeilPercent(2, 50), Is.EqualTo(1));
+            Assert.That(DemolishService.CeilPercent(3, 50), Is.EqualTo(2));
+            Assert.That(DemolishService.CeilPercent(4, 50), Is.EqualTo(2));
+            Assert.That(DemolishService.CeilPercent(5, 50), Is.EqualTo(3), "采集站木 5 应返 3");
+            Assert.That(DemolishService.CeilPercent(6, 50), Is.EqualTo(3));
+            Assert.That(DemolishService.CeilPercent(8, 50), Is.EqualTo(4));
+            Assert.That(DemolishService.CeilPercent(10, 50), Is.EqualTo(5));
+            Assert.That(DemolishService.CeilPercent(12, 50), Is.EqualTo(6));
+            Assert.That(DemolishService.CeilPercent(15, 50), Is.EqualTo(8), "箭塔木 15 应返 8");
+
+            Assert.That(DemolishService.CeilPercent(0, 50), Is.Zero, "没投入就没得返");
+            Assert.That(DemolishService.CeilPercent(5, 0), Is.Zero, "比例非法时不返还");
+        }
+
+        [Test]
+        public void Demolish_ArrowTower_RefundsOddCostRoundedUp()
+        {
+            var (map, pool, ap) = Setup();
+            var pos = new GridPos(3, 3);
+            Assert.That(
+                BuildService.TryBuild(map, pool, ap, BuildingCatalog.Get(BuildingType.ArrowTower), pos),
+                Is.True);
+            var woodBefore = pool.GetAmount(ResourceType.Wood);
+            var stoneBefore = pool.GetAmount(ResourceType.Stone);
+
+            Assert.That(DemolishService.TryDemolish(map, pool, pos), Is.True);
+
+            Assert.That(pool.GetAmount(ResourceType.Wood), Is.EqualTo(woodBefore + 8), "木15 的 50% = 7.5 → 返 8");
+            Assert.That(pool.GetAmount(ResourceType.Stone), Is.EqualTo(stoneBefore + 5), "石10 的 50% = 5");
         }
     }
 }

@@ -8,6 +8,7 @@ namespace ShengXi.Simulation
     /// </summary>
     public static class GameEvents
     {
+        /// <summary>世界就绪（开新局 / 读档）；传 null 表示回到开始界面、世界已被清空。</summary>
         public static event Action<GridMap> MapInitialized;
         public static event Action<GridPos, TerrainType> TerrainChanged;
         public static event Action<GridPos, BuildingType> BuildingPlaced;
@@ -26,7 +27,10 @@ namespace ShengXi.Simulation
         public static event Action<GridPos, int, int> BuildingRepaired;
         public static event Action<GridPos, bool> BuildingSupplyChanged;
         public static event Action<GridPos, BuildingType, int> BuildingUpgraded;
-        public static event Action<bool, int> GameOver;
+        public static event Action<GridPos> WorkshopStateChanged;
+        /// <summary>选中 / 取消选中一座建筑（null 表示取消选中）。各面板自己判断认不认这座建筑。</summary>
+        public static event Action<GridPos?> BuildingSelected;
+        public static event Action<RunOutcome, int> GameOver;
 
         public static void RaiseMapInitialized(GridMap map) => MapInitialized?.Invoke(map);
 
@@ -65,6 +69,13 @@ namespace ShengXi.Simulation
         public static void RaiseBuildingUpgraded(GridPos pos, BuildingType building, int level) =>
             BuildingUpgraded?.Invoke(pos, building, level);
 
-        public static void RaiseGameOver(bool victory, int day) => GameOver?.Invoke(victory, day);
+        /// <summary>某座工坊的开工状态或配方开关发生变化。</summary>
+        public static void RaiseWorkshopStateChanged(GridPos pos) => WorkshopStateChanged?.Invoke(pos);
+
+        /// <summary>选中 / 取消选中一座建筑。纯视图状态，不进存档。</summary>
+        public static void RaiseBuildingSelected(GridPos? pos) => BuildingSelected?.Invoke(pos);
+
+        /// <summary>一局结束（胜利 / 失败 / 主动结算），day 的含义随结局不同，见 GameOverText。</summary>
+        public static void RaiseGameOver(RunOutcome outcome, int day) => GameOver?.Invoke(outcome, day);
     }
 }

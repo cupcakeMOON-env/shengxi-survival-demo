@@ -90,7 +90,7 @@ namespace ShengXi.View
             }
         }
 
-        private void OnGameOver(bool victory, int day)
+        private void OnGameOver(RunOutcome outcome, int day)
         {
             ClearAll();
         }

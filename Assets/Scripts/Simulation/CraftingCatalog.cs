@@ -16,6 +16,11 @@ namespace ShengXi.Simulation
     /// </summary>
     public class RecipeDef
     {
+        /// <summary>
+        /// 稳定标识：每座建筑的配方开关与存档都按它记录。
+        /// 改名或调整配方顺序都不会影响已存档的开关，所以 Id 一旦定下就不要改。
+        /// </summary>
+        public string Id;
         public string Name;
         public BuildingType Producer;
         public RecipeIngredient[] InputsPerSecond;
@@ -30,10 +35,17 @@ namespace ShengXi.Simulation
     /// </summary>
     public static class CraftingCatalog
     {
+        /// <summary>建材产线 Id（存档与开关用）。</summary>
+        public const string IdMaterial = "material";
+
+        /// <summary>修理包产线 Id（存档与开关用）。</summary>
+        public const string IdRepairKit = "repair-kit";
+
         public static readonly IReadOnlyList<RecipeDef> All = new List<RecipeDef>
         {
             new RecipeDef
             {
+                Id = IdMaterial,
                 Name = "建材",
                 Producer = BuildingType.Workshop,
                 InputsPerSecond = new[]
@@ -46,6 +58,7 @@ namespace ShengXi.Simulation
             },
             new RecipeDef
             {
+                Id = IdRepairKit,
                 Name = "修理包",
                 Producer = BuildingType.Workshop,
                 InputsPerSecond = new[]
@@ -63,6 +76,26 @@ namespace ShengXi.Simulation
         /// <summary>某个生产者的全部配方；没有配方时返回空列表（不是 null）。</summary>
         public static IReadOnlyList<RecipeDef> For(BuildingType producer) =>
             ByProducer.TryGetValue(producer, out var list) ? list : System.Array.Empty<RecipeDef>();
+
+        /// <summary>按 Id 查某个生产者的配方；找不到返回 null（UI 与开关校验用）。</summary>
+        public static RecipeDef Find(BuildingType producer, string recipeId)
+        {
+            if (string.IsNullOrEmpty(recipeId))
+            {
+                return null;
+            }
+
+            var recipes = For(producer);
+            for (var i = 0; i < recipes.Count; i++)
+            {
+                if (recipes[i].Id == recipeId)
+                {
+                    return recipes[i];
+                }
+            }
+
+            return null;
+        }
 
         private static RecipeIngredient Ingredient(ResourceType type, int amountPerSecond) => new RecipeIngredient
         {

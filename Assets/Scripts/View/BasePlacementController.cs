@@ -37,8 +37,13 @@ namespace ShengXi.View
                 return;
             }
 
-            var world = _camera.ScreenToWorldPoint(Input.mousePosition);
-            Hovered = new GridPos(Mathf.FloorToInt(world.x), Mathf.FloorToInt(world.y));
+            Hovered = GridPicking.ScreenToGrid(_camera, Input.mousePosition);
+            if (!Hovered.HasValue)
+            {
+                _ghost.gameObject.SetActive(false);
+                return;
+            }
+
             var pos = Hovered.Value;
             var canPlace = BasePlacementValidator.CanPlace(loop.Map, pos);
 

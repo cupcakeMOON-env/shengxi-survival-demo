@@ -18,10 +18,13 @@ namespace ShengXi.Simulation
     /// </summary>
     public class ResourcePool
     {
+        /// <summary>资源种类数量（木头/石头/食物/建材/修理包）。涉及按 ResourceType 下标存值的代码统一用它，避免各写各的魔数。</summary>
+        public const int ResourceTypeCount = 5;
+
         /// <summary>默认容量上限；仓库建筑可在其上叠加。</summary>
         public const int DefaultCapacity = 100;
 
-        private readonly int[] _amounts = new int[5];
+        private readonly int[] _amounts = new int[ResourceTypeCount];
 
         /// <summary>容量上限，默认 100；仓库建筑可提升（CapacityBonus）。</summary>
         public int Capacity { get; set; } = DefaultCapacity;

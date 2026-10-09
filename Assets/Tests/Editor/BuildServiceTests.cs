@@ -101,5 +101,23 @@ namespace ShengXi.Tests.Editor
 
             Assert.That(ok, Is.False);
         }
+
+        [Test]
+        public void Collector_CanBeBuiltWithoutStone_SoTheGameCanAlwaysRecover()
+        {
+            var map = new GridMap(8, 8);
+            var collector = BuildingCatalog.Get(BuildingType.Collector);
+            // 只给木材，一点石头都不给：这正是「石头花光」的局面
+            map.SetTerrain(new GridPos(2, 2), TerrainType.Stone, 20);
+            var pool = new ResourcePool();
+            pool.Add(ResourceType.Wood, collector.WoodCost);
+            var ap = new ActionPointSystem(10);
+
+            Assert.That(
+                BuildService.TryBuild(map, pool, ap, collector, new GridPos(2, 2)),
+                Is.True,
+                "石头为 0 时也必须能造出采集站，否则玩家再也拿不到石头");
+            Assert.That(map.GetTile(new GridPos(2, 2)).Building, Is.EqualTo(BuildingType.Collector));
+        }
     }
 }

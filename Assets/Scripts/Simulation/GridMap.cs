@@ -80,6 +80,8 @@ namespace ShengXi.Simulation
             tile.Building = BuildingType.None;
             tile.BuildingHp = 0;
             tile.BuildingLevel = 0;
+            // 同一格子上再建工坊时应是一张白纸，不继承上一座的开工/配方开关
+            tile.ResetProductionState();
         }
 
         /// <summary>读档恢复建筑血量：直接设置，不发事件。</summary>
@@ -99,6 +101,28 @@ namespace ShengXi.Simulation
             if (IsInside(pos))
             {
                 _tiles[pos.X, pos.Y].BuildingLevel = System.Math.Max(0, level);
+            }
+        }
+
+        /// <summary>读档恢复工坊的开工状态与配方开关：直接设置，不发事件（由上层恢复后统一刷新）。</summary>
+        public void SetProductionState(GridPos pos, bool producing, IEnumerable<string> disabledRecipeIds)
+        {
+            if (!IsInside(pos))
+            {
+                return;
+            }
+
+            var tile = _tiles[pos.X, pos.Y];
+            tile.ResetProductionState();
+            tile.ProductionEnabled = producing;
+            if (disabledRecipeIds == null)
+            {
+                return;
+            }
+
+            foreach (var id in disabledRecipeIds)
+            {
+                tile.SetRecipeEnabled(id, false);
             }
         }
 

@@ -28,12 +28,10 @@ namespace ShengXi.UI
         private Text _repairKitText;
         private Text _actionPointText;
         private GameObject _panel;
-        private ResourcePool _pool;
 
         private void Awake()
         {
             var canvas = EnsureCanvas();
-            _pool = GameLoop.Instance != null ? GameLoop.Instance.Pool : null;
 
             // 仓库图标按钮（平时唯一可见的入口）
             var button = CreateToggleButton(canvas.transform);
@@ -86,18 +84,21 @@ namespace ShengXi.UI
 
         private void RefreshAll()
         {
-            if (_pool == null)
+            // 每次现取：开始界面阶段还没有资源池，开局后再取才有值（不能在这里缓存引用）
+            var loop = GameLoop.Instance;
+            var pool = loop != null ? loop.Pool : null;
+            if (pool == null || _woodText == null)
             {
                 return;
             }
 
-            _woodText.text = $"木头  {_pool.GetAmount(ResourceType.Wood)}/{_pool.Capacity}";
-            _stoneText.text = $"石头  {_pool.GetAmount(ResourceType.Stone)}/{_pool.Capacity}";
-            _foodText.text = $"食物  {_pool.GetAmount(ResourceType.Food)}/{_pool.Capacity}";
-            _materialText.text = $"建材  {_pool.GetAmount(ResourceType.Material)}/{_pool.Capacity}";
-            _repairKitText.text = $"修理包  {_pool.GetAmount(ResourceType.RepairKit)}/{_pool.Capacity}";
-            _actionPointText.text = GameLoop.Instance != null
-                ? $"行动点  {GameLoop.Instance.ActionPoints.Current}/{GameLoop.Instance.ActionPoints.MaxPerDay}"
+            _woodText.text = $"木头  {pool.GetAmount(ResourceType.Wood)}/{pool.Capacity}";
+            _stoneText.text = $"石头  {pool.GetAmount(ResourceType.Stone)}/{pool.Capacity}";
+            _foodText.text = $"食物  {pool.GetAmount(ResourceType.Food)}/{pool.Capacity}";
+            _materialText.text = $"建材  {pool.GetAmount(ResourceType.Material)}/{pool.Capacity}";
+            _repairKitText.text = $"修理包  {pool.GetAmount(ResourceType.RepairKit)}/{pool.Capacity}";
+            _actionPointText.text = loop.ActionPoints != null
+                ? $"行动点  {loop.ActionPoints.Current}/{loop.ActionPoints.MaxPerDay}"
                 : "行动点  -";
         }
 

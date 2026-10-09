@@ -151,5 +151,83 @@ namespace ShengXi.Tests.Editor
             Assert.That(UpgradeService.CanUpgrade(null, new ResourcePool(), new ActionPointSystem(10), new GridPos(1, 1)), Is.False);
             Assert.That(UpgradeService.TryUpgrade(null, null, null, new GridPos(1, 1)), Is.False);
         }
+
+        [Test]
+        public void Evaluate_ReportsWhyUpgradeIsBlocked()
+        {
+            var (map, pool, ap) = Setup();
+            var pos = new GridPos(6, 5);
+            map.Place(BuildingType.ArrowTower, pos);
+            var def = BuildingCatalog.Get(BuildingType.ArrowTower);
+
+            Assert.That(UpgradeService.Evaluate(map, pool, ap, pos), Is.EqualTo(UpgradeState.Ok));
+
+            pool.TrySpend(ResourceType.Material, pool.GetAmount(ResourceType.Material));
+            Assert.That(
+                UpgradeService.Evaluate(map, pool, ap, pos),
+                Is.EqualTo(UpgradeState.MissingMaterial),
+                "建材不足要能被单独识别出来（面板就靠它提示玩家）");
+
+            pool.Add(ResourceType.Material, def.UpgradeMaterialCost);
+            for (var i = 0; i < 10; i++)
+            {
+                ap.Spend(1);
+            }
+
+            Assert.That(ap.Current, Is.Zero);
+            Assert.That(
+                UpgradeService.Evaluate(map, pool, ap, pos),
+                Is.EqualTo(UpgradeState.MissingActionPoint),
+                "建材够了但行动点不够，原因应换成行动点");
+
+            map.SetBuildingLevel(pos, UpgradeService.MaxLevel);
+            Assert.That(UpgradeService.Evaluate(map, pool, ap, pos), Is.EqualTo(UpgradeState.MaxLevel));
+
+            var warehouse = new GridPos(2, 2);
+            map.Place(BuildingType.Warehouse, warehouse);
+            Assert.That(
+                UpgradeService.Evaluate(map, pool, ap, warehouse),
+                Is.EqualTo(UpgradeState.NotUpgradable),
+                "仓库不可升级");
+            Assert.That(
+                UpgradeService.Evaluate(map, pool, ap, new GridPos(0, 0)),
+                Is.EqualTo(UpgradeState.NotUpgradable),
+                "空地不可升级");
+        }
+
+        [Test]
+        public void CanUpgrade_IsExactlyEvaluateOk()
+        {
+            var (map, pool, ap) = Setup();
+            var tower = new GridPos(6, 5);
+            var wall = new GridPos(7, 5);
+            map.Place(BuildingType.ArrowTower, tower);
+            map.Place(BuildingType.Wall, wall);
+            map.SetBuildingLevel(wall, UpgradeService.MaxLevel);
+
+            foreach (var pos in new[] { tower, wall, new GridPos(1, 1) })
+            {
+                Assert.That(
+                    UpgradeService.CanUpgrade(map, pool, ap, pos),
+                    Is.EqualTo(UpgradeService.Evaluate(map, pool, ap, pos) == UpgradeState.Ok),
+                    $"{pos} 上 CanUpgrade 与 Evaluate 必须一致");
+            }
+        }
+
+        [Test]
+        public void IsUpgradable_IgnoresResources()
+        {
+            var (map, pool, ap) = Setup();
+            var tower = new GridPos(6, 5);
+            var warehouse = new GridPos(2, 2);
+            map.Place(BuildingType.ArrowTower, tower);
+            map.Place(BuildingType.Warehouse, warehouse);
+            pool.TrySpend(ResourceType.Material, pool.GetAmount(ResourceType.Material));
+
+            Assert.That(UpgradeService.IsUpgradable(map, tower), Is.True, "有没有资格升级与手上的建材无关");
+            Assert.That(UpgradeService.CanUpgrade(map, pool, ap, tower), Is.False, "但建材不够时确实升不了");
+            Assert.That(UpgradeService.IsUpgradable(map, warehouse), Is.False);
+            Assert.That(UpgradeService.IsUpgradable(map, new GridPos(0, 0)), Is.False);
+        }
     }
 }

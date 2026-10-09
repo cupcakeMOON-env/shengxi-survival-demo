@@ -8,7 +8,7 @@ namespace ShengXi.Simulation
     /// </summary>
     public static class SaveMigrator
     {
-        public const int CurrentVersion = 4;
+        public const int CurrentVersion = 5;
 
         public static SaveData Upgrade(SaveData data)
         {
@@ -64,6 +64,23 @@ namespace ShengXi.Simulation
                 // v3 → v4：资源池新增修理包。旧档没有该字段，JsonUtility 反序列化后即为 0，
                 // 这里只做版本推进（语义等价于修理包 0）。
                 data.version = 4;
+            }
+
+            if (data.version < 5)
+            {
+                // v4 → v5：每座工坊新增「是否开工」与「配方开关」。
+                // 注意 bool 会被 JsonUtility 反序列化成 false，而旧档语义是「工坊都在开工、配方全开」，
+                // 所以这里必须显式补 true，否则读旧档后所有工坊会静默停产。
+                if (data.tiles != null)
+                {
+                    foreach (var t in data.tiles)
+                    {
+                        t.producing = true;
+                        t.disabledRecipes = Array.Empty<string>();
+                    }
+                }
+
+                data.version = 5;
             }
 
             if (data.tiles == null)

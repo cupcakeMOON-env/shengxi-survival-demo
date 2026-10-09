@@ -164,5 +164,66 @@ namespace ShengXi.Tests.Editor
         {
             Assert.That(SaveMigrator.Upgrade(null), Is.Null);
         }
+
+        [Test]
+        public void RoundTrip_PreservesWorkshopSwitches()
+        {
+            var map = new GridMap(10, 10);
+            var pos = new GridPos(2, 2);
+            map.Place(BuildingType.Workshop, pos);
+            WorkshopService.SetProducing(map, pos, false);
+            WorkshopService.SetRecipeEnabled(map, pos, CraftingCatalog.IdMaterial, false);
+
+            var data = SaveSerializer.Build(
+                map,
+                new ResourcePool(),
+                new ActionPointSystem(10),
+                new DayCycle(),
+                new Base(new GridPos(5, 5), 20),
+                new List<Enemy>(),
+                1);
+
+            var restored = SaveSerializer.RebuildMap(data);
+            var tile = restored.GetTile(pos);
+
+            Assert.That(tile.ProductionEnabled, Is.False, "停产状态应随存档往返");
+            Assert.That(
+                tile.IsRecipeEnabled(CraftingCatalog.IdMaterial),
+                Is.False,
+                "被关闭的产线应随存档往返");
+            Assert.That(
+                tile.IsRecipeEnabled(CraftingCatalog.IdRepairKit),
+                Is.True,
+                "没被关闭的产线应保持开启");
+        }
+
+        [Test]
+        public void Migrator_UpgradesV4Save_KeepsWorkshopsRunning()
+        {
+            var old = new SaveData
+            {
+                version = 4,
+                tiles = new[]
+                {
+                    new SaveTileData
+                    {
+                        x = 2,
+                        y = 2,
+                        building = (int)BuildingType.Workshop,
+                        buildingHp = 5,
+                        level = 1,
+                    },
+                },
+            };
+
+            var upgraded = SaveMigrator.Upgrade(old);
+
+            Assert.That(upgraded.version, Is.EqualTo(SaveMigrator.CurrentVersion));
+            Assert.That(
+                upgraded.tiles[0].producing,
+                Is.True,
+                "v4 存档没有 producing 字段，JsonUtility 会给 false，迁移必须补成开工");
+            Assert.That(upgraded.tiles[0].disabledRecipes, Is.Not.Null.And.Empty, "旧档没有关闭任何产线");
+        }
     }
 }

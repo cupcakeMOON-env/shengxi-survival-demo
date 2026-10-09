@@ -17,8 +17,10 @@ namespace ShengXi.View
 
         public BuildingDef ActiveDef { get; private set; }
         public bool IsDemolishing { get; private set; }
-        public bool IsUpgrading { get; private set; }
         public bool IsRepairing { get; private set; }
+
+        /// <summary>当前是否处于某个操作模式（建造 / 拆除 / 修理）。</summary>
+        public bool HasActiveMode => ActiveDef != null || IsDemolishing || IsRepairing;
 
         public void Initialize(Camera camera)
         {
@@ -33,7 +35,6 @@ namespace ShengXi.View
             if (toggled != null)
             {
                 IsDemolishing = false;
-                IsUpgrading = false;
                 IsRepairing = false;
             }
         }
@@ -45,24 +46,11 @@ namespace ShengXi.View
             if (IsDemolishing)
             {
                 ActiveDef = null;
-                IsUpgrading = false;
                 IsRepairing = false;
             }
         }
 
-        /// <summary>切换升级模式：再次点击关闭，切建造/拆除时自动退出。</summary>
-        public void SetUpgradeActive()
-        {
-            IsUpgrading = !IsUpgrading;
-            if (IsUpgrading)
-            {
-                ActiveDef = null;
-                IsDemolishing = false;
-                IsRepairing = false;
-            }
-        }
-
-        /// <summary>切换修理模式：再次点击关闭，切建造/拆除/升级时自动退出。</summary>
+        /// <summary>切换修理模式：再次点击关闭，切建造/拆除时自动退出。</summary>
         public void SetRepairActive()
         {
             IsRepairing = !IsRepairing;
@@ -70,7 +58,6 @@ namespace ShengXi.View
             {
                 ActiveDef = null;
                 IsDemolishing = false;
-                IsUpgrading = false;
             }
         }
 
@@ -78,29 +65,59 @@ namespace ShengXi.View
         {
             ActiveDef = null;
             IsDemolishing = false;
-            IsUpgrading = false;
             IsRepairing = false;
+        }
+
+        /// <summary>
+        /// 玩家主动退出当前操作模式（右键）。
+        /// 与 ClearActive 等价，单独留一个入口是为了把「玩家取消」和「切换模式时的内部清理」
+        /// 在语义上分开，也方便在这里加日志 / 音效 / 提示。
+        /// </summary>
+        public void CancelActiveMode()
+        {
+            if (!HasActiveMode)
+            {
+                return;
+            }
+
+            ClearActive();
+            Debug.Log("[BuildModeController] 右键退出当前操作模式");
         }
 
         private void Update()
         {
+            // 右键退出当前操作模式，等价于再点一次那个按钮。
+            // 放在最前面：不管白天黑夜、也不管鼠标是不是压在 UI 上，都能取消。
+            if (HasActiveMode && Input.GetMouseButtonDown(1))
+            {
+                CancelActiveMode();
+                return;
+            }
+
             if (GameLoop.Instance == null ||
+                !GameLoop.Instance.HasWorld ||
                 GameLoop.Instance.GameOver ||
                 !GameLoop.Instance.Cycle.IsDay ||
                 GameLoop.Instance.IsChoosingBase ||
                 _camera == null ||
-                (ActiveDef == null && !IsDemolishing && !IsUpgrading && !IsRepairing))
+                !HasActiveMode)
             {
                 if (_ghostCreated)
                 {
                     _ghost.gameObject.SetActive(false);
                 }
 
+            return;
+        }
+
+            var picked = GridPicking.ScreenToGrid(_camera, Input.mousePosition);
+            if (!picked.HasValue)
+            {
+                _ghost.gameObject.SetActive(false);
                 return;
             }
 
-            var world = _camera.ScreenToWorldPoint(Input.mousePosition);
-            var pos = new GridPos(Mathf.FloorToInt(world.x), Mathf.FloorToInt(world.y));
+            var pos = picked.Value;
 
             if (IsDemolishing)
             {
@@ -114,20 +131,6 @@ namespace ShengXi.View
                 _ghost.gameObject.SetActive(true);
                 _ghost.transform.position = new Vector3(pos.X, pos.Y, -0.5f);
                 _ghost.color = DemolishService.CanDemolish(GameLoop.Instance.Map, pos)
-                    ? new Color(0f, 1f, 0f, 0.45f)
-                    : new Color(1f, 0f, 0f, 0.45f);
-                return;
-            }
-
-            if (IsUpgrading)
-            {
-                _ghost.gameObject.SetActive(true);
-                _ghost.transform.position = new Vector3(pos.X, pos.Y, -0.5f);
-                _ghost.color = UpgradeService.CanUpgrade(
-                    GameLoop.Instance.Map,
-                    GameLoop.Instance.Pool,
-                    GameLoop.Instance.ActionPoints,
-                    pos)
                     ? new Color(0f, 1f, 0f, 0.45f)
                     : new Color(1f, 0f, 0f, 0.45f);
                 return;

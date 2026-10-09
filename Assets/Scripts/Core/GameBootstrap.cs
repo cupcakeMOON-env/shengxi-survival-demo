@@ -1,5 +1,6 @@
 using ShengXi.View;
 using ShengXi.UI;
+using ShengXi.Simulation;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -33,7 +34,7 @@ namespace ShengXi.Core
             }
 
             var root = new GameObject("GameRoot");
-            var loop = root.AddComponent<GameLoop>();
+            root.AddComponent<GameLoop>();
             root.AddComponent<GridView>();
 
             var buildMode = root.AddComponent<BuildModeController>();
@@ -42,9 +43,15 @@ namespace ShengXi.Core
             var towerRange = root.AddComponent<TowerRangeOverlay>();
             root.AddComponent<ResourceBar>();
             root.AddComponent<BuildMenu>();
+            // 工坊面板加在结算面板之前：结算全屏遮罩要盖在它上面
+            root.AddComponent<WorkshopPanel>();
+            // 升级面板与工坊面板都订阅 BuildingSelected，各自只认自己那类建筑
+            root.AddComponent<UpgradePanel>();
             root.AddComponent<EnemyView>();
             root.AddComponent<DayBanner>();
             root.AddComponent<GameOverPanel>();
+            // 开始界面最后加：同层级下后创建的排在后面，会盖在所有 HUD 之上
+            root.AddComponent<StartMenuPanel>();
 
             // 清掉场景里可能残留的默认相机（模板场景自带 Main Camera），
             // 只保留我们自己创建的正交相机，避免 Camera.main 取错相机导致坐标换算错误。
@@ -54,15 +61,19 @@ namespace ShengXi.Core
                 Object.Destroy(existingCam.gameObject);
             }
 
-            var map = loop.Map;
+            // 开机时还没有世界（要先进开始界面），相机先按地图默认尺寸摆好；
+            // 新开一局用的也是这套默认尺寸，所以不用等地图生成再调整。
             var cameraGo = new GameObject("Main Camera");
             cameraGo.tag = "MainCamera";
             var cam = cameraGo.AddComponent<Camera>();
             cam.orthographic = true;
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = new Color(0.08f, 0.08f, 0.10f);
-            cam.transform.position = new Vector3((map.Width - 1) * 0.5f, (map.Height - 1) * 0.5f, -10f);
-            cam.orthographicSize = map.Height * 0.5f + 2f;
+            cam.transform.position = new Vector3(
+                (MapGenerator.DefaultWidth - 1) * 0.5f,
+                (MapGenerator.DefaultHeight - 1) * 0.5f,
+                -10f);
+            cam.orthographicSize = MapGenerator.DefaultHeight * 0.5f + 2f;
 
             input.Initialize(cam, buildMode);
             buildMode.Initialize(cam);

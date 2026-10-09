@@ -53,6 +53,8 @@ namespace ShengXi.Simulation
                         building = (int)tile.Building,
                         buildingHp = tile.BuildingHp,
                         level = tile.BuildingLevel,
+                        producing = tile.Building == BuildingType.Workshop ? tile.ProductionEnabled : true,
+                        disabledRecipes = DisabledRecipeIdsFor(tile),
                     });
                 }
             }
@@ -101,9 +103,27 @@ namespace ShengXi.Simulation
                 map.Place(building, new GridPos(t.x, t.y));
                 map.SetBuildingLevel(new GridPos(t.x, t.y), t.level);
                 map.SetBuildingHp(new GridPos(t.x, t.y), t.buildingHp);
+                map.SetProductionState(new GridPos(t.x, t.y), t.producing, t.disabledRecipes);
             }
 
             return map;
+        }
+
+        /// <summary>把某格被关闭的配方 Id 打包成存档数组；非工坊或没关任何产线时返回空数组。</summary>
+        private static string[] DisabledRecipeIdsFor(Tile tile)
+        {
+            if (tile == null || tile.Building != BuildingType.Workshop || !tile.HasDisabledRecipes)
+            {
+                return System.Array.Empty<string>();
+            }
+
+            var ids = new List<string>(tile.DisabledRecipeIds.Count);
+            foreach (var id in tile.DisabledRecipeIds)
+            {
+                ids.Add(id);
+            }
+
+            return ids.ToArray();
         }
 
         public static ResourcePool RebuildPool(SaveData data)

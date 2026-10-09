@@ -19,12 +19,26 @@ namespace ShengXi.Core
         public Base Base { get; private set; }
         public List<Enemy> Enemies { get; private set; } = new List<Enemy>();
         public bool GameOver { get; private set; }
-        public bool Victory { get; private set; }
+
+        /// <summary>本局的结束方式；只有 GameOver 为 true 时才有值（未结束时为 null）。</summary>
+        public RunOutcome? Outcome { get; private set; }
+
+        /// <summary>是否停在开始界面。开机即为 true，开始新游戏 / 读档后才变成 false。</summary>
+        public bool IsInMenu { get; private set; } = true;
+
+        /// <summary>当前是否已经有一局世界在跑。开始界面阶段 Map 等模拟数据都是 null。</summary>
+        public bool HasWorld => Map != null;
+
+        /// <summary>最近一次存 / 读档用的槽位，默认第一个存档位。</summary>
+        public string CurrentSlot { get; private set; } = SaveSlots.IdAt(0);
+
+        /// <summary>临时暂停模拟（打开存档面板等模态界面时用），不改变胜负状态。</summary>
+        public bool IsPaused { get; private set; }
         public int Seed { get; private set; }
         private bool _baseConfirmed;
 
         /// <summary>开局是否处于「选择据点位置」阶段。</summary>
-        public bool IsChoosingBase => !_baseConfirmed;
+        public bool IsChoosingBase => Map != null && !_baseConfirmed;
 
         /// <summary>
         /// 开新局：原地重置全部状态（不重载场景），并通过事件让所有视图重建。
@@ -32,6 +46,7 @@ namespace ShengXi.Core
         /// </summary>
         public void NewGame()
         {
+            IsInMenu = false;
             Seed = Random.Range(1, int.MaxValue);
             Map = MapGenerator.CreateRandomMap(MapGenerator.DefaultWidth, MapGenerator.DefaultHeight, Seed);
             Pool = new ResourcePool();
@@ -42,7 +57,7 @@ namespace ShengXi.Core
             Base = null;
             Enemies = new List<Enemy>();
             GameOver = false;
-            Victory = false;
+            Outcome = null;
             _baseConfirmed = false;
             _nextEnemyId = 0;
             _collectorTimer = 0f;
@@ -76,18 +91,9 @@ namespace ShengXi.Core
 
         private void Awake()
         {
+            // 开机先进开始界面：地图 / 资源 / 日夜这些模拟数据由 NewGame / LoadGame 创建，
+            // 这里只登记实例，不生成任何世界，避免"菜单背后其实已经跑着一局"。
             Instance = this;
-            Seed = Random.Range(1, int.MaxValue);
-            Map = MapGenerator.CreateRandomMap(MapGenerator.DefaultWidth, MapGenerator.DefaultHeight, Seed);
-            Pool = new ResourcePool();
-            Pool.Add(ResourceType.Wood, StartingWood);
-            Pool.Add(ResourceType.Stone, StartingStone);
-            ActionPoints = new ActionPointSystem(10);
-            Cycle = new DayCycle();
-            GameEvents.RaiseMapInitialized(Map);
-            GameEvents.RaiseDayChanged(Cycle.Day);
-            GameEvents.RaisePhaseChanged(Cycle.Phase);
-            GameEvents.RaiseActionPointsChanged(ActionPoints.Current, ActionPoints.MaxPerDay);
         }
 
         /// <summary>
@@ -121,6 +127,7 @@ namespace ShengXi.Core
             var data = SaveSerializer.Build(Map, Pool, ActionPoints, Cycle, Base, Enemies, Seed);
             SaveMigrator.Upgrade(data);
             SaveService.Write(data, slot);
+            CurrentSlot = slot;
             Debug.Log($"[Save] 已存档：第 {Cycle.Day} 天");
         }
 
@@ -135,6 +142,8 @@ namespace ShengXi.Core
             }
 
             data = SaveMigrator.Upgrade(data);
+            IsInMenu = false;
+            CurrentSlot = slot;
             Seed = data.seed;
             Map = SaveSerializer.RebuildMap(data);
             Pool = SaveSerializer.RebuildPool(data);
@@ -144,7 +153,7 @@ namespace ShengXi.Core
             Enemies = SaveSerializer.RebuildEnemies(data);
             _baseConfirmed = true;
             GameOver = false;
-            Victory = false;
+            Outcome = null;
             _nextEnemyId = 0;
             _supplyTimer = 0f;
             if (data.enemies != null)
@@ -215,9 +224,62 @@ namespace ShengXi.Core
             _supplyTimer = 0f;
         }
 
+        /// <summary>
+        /// 主动结算：玩家提前收局，按当前局面出结算页。
+        /// 已经结束（胜负已分或已结算）或还没落据点时返回 false，避免重复结算把局面又"清"一遍。
+        /// 白天夜晚都允许——夜里打不下去想收手，也应该能收。
+        /// </summary>
+        public bool SettleRun()
+        {
+            if (GameOver || !_baseConfirmed)
+            {
+                return false;
+            }
+
+            GameOver = true;
+            Outcome = RunOutcome.Settled;
+            GameEvents.RaiseGameOver(RunOutcome.Settled, Cycle.Day);
+            return true;
+        }
+
+        /// <summary>把当前局面拍成一份结算数据，供结算页渲染。</summary>
+        public RunSummary BuildSummary(RunOutcome outcome) =>
+            SettlementService.Build(Map, Pool, ActionPoints, Cycle, Base, outcome);
+
+        /// <summary>
+        /// 回到开始界面：清空当前世界并广播 MapInitialized(null)，
+        /// 让所有视图把画面收干净（开始界面正是靠这个事件显示自己的）。
+        /// 不要在开始界面状态调用——那时本来就没有世界。
+        /// </summary>
+        public void ReturnToMenu()
+        {
+            IsInMenu = true;
+            IsPaused = false;
+            GameOver = false;
+            Outcome = null;
+            _baseConfirmed = false;
+            Map = null;
+            Pool = null;
+            ActionPoints = null;
+            Cycle = null;
+            Base = null;
+            Enemies = new List<Enemy>();
+            _collectorTimer = 0f;
+            _combatTimer = 0f;
+            _supplyTimer = 0f;
+            _productionTimer = 0f;
+
+            GameEvents.RaiseMapInitialized(null);
+            GameEvents.RaiseEnemyCountChanged(0);
+        }
+
+        /// <summary>暂停 / 恢复模拟推进。开始界面与已结束的局面本来就不推进，这里只管模态界面。</summary>
+        public void SetPaused(bool paused) => IsPaused = paused;
+
         private void Update()
         {
-            if (GameOver)
+            // 开始界面（没有世界）、模态界面暂停、本局已结束都不推进模拟
+            if (IsInMenu || IsPaused || GameOver || Map == null)
             {
                 return;
             }
@@ -266,8 +328,8 @@ namespace ShengXi.Core
             if (Base.IsDestroyed)
             {
                 GameOver = true;
-                Victory = false;
-                GameEvents.RaiseGameOver(false, Cycle.Day);
+                Outcome = RunOutcome.Defeat;
+                GameEvents.RaiseGameOver(RunOutcome.Defeat, Cycle.Day);
                 return;
             }
 
@@ -279,8 +341,8 @@ namespace ShengXi.Core
                 if (Cycle.Day > WaveScheduler.WinDay)
                 {
                     GameOver = true;
-                    Victory = true;
-                    GameEvents.RaiseGameOver(true, Cycle.Day);
+                    Outcome = RunOutcome.Victory;
+                    GameEvents.RaiseGameOver(RunOutcome.Victory, Cycle.Day);
                 }
             }
         }

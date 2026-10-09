@@ -23,7 +23,9 @@ namespace ShengXi.View
         [SerializeField] private Color towerColor = new Color(0.35f, 0.55f, 0.90f);
         [SerializeField] private Color starvedColor = new Color(0.26f, 0.28f, 0.33f);
         [SerializeField] private Color workshopColor = new Color(0.95f, 0.62f, 0.20f);
+        [SerializeField] private Color workshopIdleColor = new Color(0.46f, 0.34f, 0.18f); // 停产 / 全部产线关闭的工坊
         [SerializeField] private Color baseColor = new Color(0.95f, 0.82f, 0.30f);
+        [SerializeField] private Color selectionColor = new Color(0.40f, 0.92f, 1f); // 选中工坊的描边
 
         private const float TileSize = 0.96f;
         private const float FlashDuration = 0.18f;
@@ -37,20 +39,25 @@ namespace ShengXi.View
         private Sprite _unitSprite;
         private GridMap _map;
         private Transform _tileRoot;
+        private Transform _selectionFrame;
+        private GridPos? _selectedBuilding;
 
         private void OnEnable()
         {
             GameEvents.MapInitialized += OnMapInitialized;
-            GameEvents.TerrainChanged += OnTerrainChanged;
+            GameEvents.TerrainChanged += HandleTerrainChanged;
             GameEvents.BuildingPlaced += OnBuildingPlaced;
             GameEvents.BuildingRemoved += OnBuildingRemoved;
             GameEvents.BuildingDamaged += OnBuildingDamaged;
             GameEvents.BuildingRepaired += OnBuildingRepaired;
             GameEvents.BuildingSupplyChanged += OnBuildingSupplyChanged;
             GameEvents.BuildingUpgraded += OnBuildingUpgraded;
+            GameEvents.WorkshopStateChanged += OnWorkshopStateChanged;
+            GameEvents.BuildingSelected += OnBuildingSelected;
 
             EnsureTileRoot();
-            if (GameLoop.Instance != null)
+            // 开始界面阶段没有世界，先空着，等 MapInitialized 再画
+            if (GameLoop.Instance != null && GameLoop.Instance.Map != null)
             {
                 Build(GameLoop.Instance.Map);
             }
@@ -59,18 +66,24 @@ namespace ShengXi.View
         private void OnDisable()
         {
             GameEvents.MapInitialized -= OnMapInitialized;
-            GameEvents.TerrainChanged -= OnTerrainChanged;
+            GameEvents.TerrainChanged -= HandleTerrainChanged;
             GameEvents.BuildingPlaced -= OnBuildingPlaced;
             GameEvents.BuildingRemoved -= OnBuildingRemoved;
             GameEvents.BuildingDamaged -= OnBuildingDamaged;
             GameEvents.BuildingRepaired -= OnBuildingRepaired;
             GameEvents.BuildingSupplyChanged -= OnBuildingSupplyChanged;
             GameEvents.BuildingUpgraded -= OnBuildingUpgraded;
+            GameEvents.WorkshopStateChanged -= OnWorkshopStateChanged;
+            GameEvents.BuildingSelected -= OnBuildingSelected;
         }
 
         private void OnMapInitialized(GridMap map) => Build(map);
 
-        private void OnTerrainChanged(GridPos pos, TerrainType terrain)
+        /// <summary>
+        /// 注意：这里不能叫 OnTerrainChanged —— 那是 Unity 内建的 Terrain 消息名，
+        /// 引擎会按消息去调用它并因为签名不符在玩家日志里报 "The message must have 0 or 1 parameters"。
+        /// </summary>
+        private void HandleTerrainChanged(GridPos pos, TerrainType terrain)
         {
             if (_tiles.TryGetValue(pos, out var renderer))
             {
@@ -99,6 +112,25 @@ namespace ShengXi.View
             renderer.color = ColorForTile(_map.GetTile(pos));
             StopFlash(pos);
             DestroyHealthBar(pos);
+            if (_selectedBuilding.HasValue && _selectedBuilding.Value == pos)
+            {
+                SetSelectedBuilding(null);
+            }
+        }
+
+        /// <summary>工坊开工 / 停产 / 配方开关变化：只重上该格颜色。</summary>
+        private void OnWorkshopStateChanged(GridPos pos)
+        {
+            if (_tiles.TryGetValue(pos, out var renderer) && _map != null)
+            {
+                renderer.color = ColorForTile(_map.GetTile(pos));
+            }
+        }
+
+        /// <summary>选中 / 取消选中建筑：移动描边框，不改变任何玩法数据。</summary>
+        private void OnBuildingSelected(GridPos? pos)
+        {
+            SetSelectedBuilding(pos);
         }
 
         private void OnBuildingDamaged(GridPos pos, int currentHp, int maxHp)
@@ -154,6 +186,11 @@ namespace ShengXi.View
             _map = map;
             Clear();
             EnsureTileRoot();
+            SetSelectedBuilding(null);
+            if (map == null)
+            {
+                return;
+            }
 
             EnsureUnitSprite();
 
@@ -202,6 +239,63 @@ namespace ShengXi.View
             }
 
             _tiles.Clear();
+        }
+
+        /// <summary>设置当前高亮的工坊格；传 null 取消选中。</summary>
+        private void SetSelectedBuilding(GridPos? pos)
+        {
+            _selectedBuilding = pos;
+
+            if (!pos.HasValue || _map == null || _map.GetTile(pos.Value) == null)
+            {
+                if (_selectionFrame != null)
+                {
+                    _selectionFrame.gameObject.SetActive(false);
+                }
+
+                return;
+            }
+
+            EnsureSelectionFrame();
+            _selectionFrame.position = new Vector3(pos.Value.X, pos.Value.Y, 0f);
+            _selectionFrame.gameObject.SetActive(true);
+        }
+
+        /// <summary>
+        /// 选中描边：四条细边贴在格子边缘、画在格子前面（z 略小），
+        /// 不用「放大一张实心块垫在下面」是因为相邻格子会把它盖住，只留一条看不清的缝。
+        /// </summary>
+        private void EnsureSelectionFrame()
+        {
+            if (_selectionFrame != null)
+            {
+                return;
+            }
+
+            EnsureUnitSprite();
+            var root = new GameObject("SelectionFrame");
+            root.transform.SetParent(transform, false);
+            _selectionFrame = root.transform;
+
+            const float thickness = 0.08f;
+            const float half = TileSize * 0.5f;
+            const float barZ = -0.06f;
+            CreateFrameBar(root.transform, "Top", new Vector3(0f, half, barZ), new Vector3(TileSize, thickness, 1f));
+            CreateFrameBar(root.transform, "Bottom", new Vector3(0f, -half, barZ), new Vector3(TileSize, thickness, 1f));
+            CreateFrameBar(root.transform, "Left", new Vector3(-half, 0f, barZ), new Vector3(thickness, TileSize, 1f));
+            CreateFrameBar(root.transform, "Right", new Vector3(half, 0f, barZ), new Vector3(thickness, TileSize, 1f));
+            root.SetActive(false);
+        }
+
+        private void CreateFrameBar(Transform parent, string name, Vector3 localPosition, Vector3 localScale)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = _unitSprite;
+            sr.color = selectionColor;
+            sr.transform.localPosition = localPosition;
+            sr.transform.localScale = localScale;
         }
 
         private void EnsureUnitSprite()
@@ -362,6 +456,12 @@ namespace ShengXi.View
                     {
                         return starvedColor;
                     }
+                }
+
+                // 停产（或所有产线都关掉）的工坊画成暗色，一眼能看出它没在干活
+                if (tile.Building == BuildingType.Workshop && !WorkshopService.IsEffectivelyProducing(tile))
+                {
+                    return workshopIdleColor;
                 }
 
                 // 等级越高的建筑颜色越亮，升级效果一眼可见（等级 1 保持原始色）

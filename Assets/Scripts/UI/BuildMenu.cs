@@ -39,8 +39,6 @@ namespace ShengXi.UI
 
             x = CreateButton(barRoot.transform, x, "拆除", () => _buildMode.SetDemolishActive());
 
-            x = CreateButton(barRoot.transform, x, "升级", () => _buildMode.SetUpgradeActive());
-
             x = CreateButton(barRoot.transform, x, "修理", () => _buildMode.SetRepairActive());
 
             x = CreateButton(barRoot.transform, x, "进入夜晚", () =>
@@ -53,17 +51,28 @@ namespace ShengXi.UI
 
             x = CreateButton(barRoot.transform, x, "存档", () =>
             {
-                if (GameLoop.Instance != null)
+                var menu = Object.FindAnyObjectByType<StartMenuPanel>();
+                if (menu != null)
                 {
-                    GameLoop.Instance.SaveGame();
+                    menu.OpenSlots(SlotPanelMode.Save);
                 }
             });
 
             x = CreateButton(barRoot.transform, x, "读档", () =>
             {
+                var menu = Object.FindAnyObjectByType<StartMenuPanel>();
+                if (menu != null)
+                {
+                    menu.OpenSlots(SlotPanelMode.Load);
+                }
+            });
+
+            // 主动结算放在最右端：它不可撤销，离高频按钮（建造 / 进入夜晚）越远越好
+            x = CreateButton(barRoot.transform, x, "结算本局", () =>
+            {
                 if (GameLoop.Instance != null)
                 {
-                    GameLoop.Instance.LoadGame();
+                    GameLoop.Instance.SettleRun();
                 }
             });
 
@@ -71,7 +80,30 @@ namespace ShengXi.UI
             // 避免右侧按钮（进入夜晚/存档/读档）在常见窗口下溢出屏幕。
             // 纵向抬高到 y=90，让按钮条贴在地图下沿（地图底边约在屏幕高度 7% 处），
             // 不再悬在屏幕底部造成大片留白；按钮背景半透明，地图透过可见。
+            // 面板功能没有独立的模式按钮，靠按钮条上方一行浅色提示告诉玩家怎么打开。
+            CreateHint(barRoot.transform, x - 10f);
             rt.anchoredPosition = new Vector2(-x * 0.5f, 90f);
+        }
+
+        /// <summary>按钮条上方的一行提示：工坊面板怎么打开。</summary>
+        private static void CreateHint(Transform parent, float width)
+        {
+            var go = new GameObject("Hint", typeof(RectTransform), typeof(Text));
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = Vector2.zero;
+            rt.anchorMax = Vector2.zero;
+            rt.pivot = Vector2.zero;
+            rt.sizeDelta = new Vector2(width, 26f);
+            rt.anchoredPosition = new Vector2(0f, 72f);
+
+            var text = go.GetComponent<Text>();
+            text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+            text.fontSize = 18;
+            text.alignment = TextAnchor.MiddleLeft;
+            text.color = new Color(1f, 1f, 1f, 0.6f);
+            text.raycastTarget = false;
+            text.text = "提示：点工坊格子开关产线，点箭塔 / 围墙看升级，右键退出当前模式";
         }
 
         private static string FormatCost(BuildingDef def)

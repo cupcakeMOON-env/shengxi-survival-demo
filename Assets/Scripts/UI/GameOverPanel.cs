@@ -1,6 +1,6 @@
+using ShengXi.Core;
 using ShengXi.Simulation;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace ShengXi.UI
@@ -13,6 +13,7 @@ namespace ShengXi.UI
         private GameObject _panel;
         private Text _resultText;
         private Text _detailText;
+        private Text _statsText;
 
         private void Awake()
         {
@@ -29,18 +30,23 @@ namespace ShengXi.UI
             image.color = new Color(0f, 0f, 0f, 0.74f);
             image.raycastTarget = true;
 
-            _resultText = CreateText(_panel.transform, "ResultText", 64, new Vector2(0f, 70f));
-            _detailText = CreateText(_panel.transform, "DetailText", 34, new Vector2(0f, -10f));
-            CreateButton(_panel.transform, new Vector2(0f, -110f), "重新开始", () =>
+            _resultText = CreateText(_panel.transform, "ResultText", 64, new Vector2(0f, 230f));
+            _detailText = CreateText(_panel.transform, "DetailText", 34, new Vector2(0f, 150f));
+            _statsText = CreateText(_panel.transform, "StatsText", 26, new Vector2(0f, -30f));
+            _statsText.rectTransform.sizeDelta = new Vector2(1000f, 220f);
+            CreateButton(_panel.transform, new Vector2(-125f, -250f), "再来一局", () =>
             {
-                var scene = SceneManager.GetActiveScene();
-                if (scene.buildIndex >= 0)
+                if (GameLoop.Instance != null)
                 {
-                    SceneManager.LoadScene(scene.buildIndex);
+                    // 直接原地重开，不用重载场景：世界由 NewGame 重建，视图靠 MapInitialized 重建
+                    GameLoop.Instance.NewGame();
                 }
-                else
+            });
+            CreateButton(_panel.transform, new Vector2(125f, -250f), "返回开始界面", () =>
+            {
+                if (GameLoop.Instance != null)
                 {
-                    SceneManager.LoadScene(scene.name);
+                    GameLoop.Instance.ReturnToMenu();
                 }
             });
 
@@ -61,13 +67,24 @@ namespace ShengXi.UI
 
         private void OnMapInitialized(GridMap map) => _panel.SetActive(false);
 
-        private void OnGameOver(bool victory, int day)
+        private void OnGameOver(RunOutcome outcome, int day)
         {
-            _resultText.text = victory ? "胜利！" : "失败！";
-            _resultText.color = victory ? new Color(0.4f, 0.9f, 0.4f) : new Color(0.95f, 0.35f, 0.35f);
-            _detailText.text = victory ? $"你撑过了第 {day - 1} 天" : $"据点在第 {day} 天被摧毁";
+            _resultText.text = GameOverText.Headline(outcome);
+            _resultText.color = GameOverText.ColorFor(outcome);
+            _detailText.text = GameOverText.Summary(outcome, day);
+            _statsText.text = GameOverText.Stats(
+                GameLoop.Instance != null ? GameLoop.Instance.BuildSummary(outcome) : null);
             _panel.SetActive(true);
         }
+
+        /// <summary>结算详情文字（PlayMode 测试用）。</summary>
+        public string DetailText => _detailText != null ? _detailText.text : string.Empty;
+
+        /// <summary>结算统计文字（PlayMode 测试用）。</summary>
+        public string StatsText => _statsText != null ? _statsText.text : string.Empty;
+
+        /// <summary>结算页当前是否可见（PlayMode 测试用）。</summary>
+        public bool IsVisible => _panel != null && _panel.activeSelf;
 
         private static Text CreateText(Transform parent, string name, int fontSize, Vector2 position)
         {

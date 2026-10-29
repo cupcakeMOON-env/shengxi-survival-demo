@@ -216,6 +216,56 @@ namespace ShengXi.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator Collector_KeepsBuildingColor_AfterResourceIsDepleted()
+        {
+            yield return null;
+            var loop = GameLoop.Instance;
+            loop.NewGame();
+            yield return null;
+            Assert.That(ConfirmBaseAtWalkable(loop), Is.True, "应能放置据点");
+
+            var resourcePos = FindResourceTile(loop.Map, TerrainType.Forest);
+            Assert.That(resourcePos.HasValue, Is.True, "地图上应有森林资源格");
+            Assert.That(
+                BuildService.TryBuild(
+                    loop.Map,
+                    loop.Pool,
+                    loop.ActionPoints,
+                    BuildingCatalog.Get(BuildingType.Collector),
+                    resourcePos.Value),
+                Is.True,
+                "应能在森林资源格上建造采集站");
+
+            var renderer = FindTileRenderer(resourcePos.Value);
+            Assert.That(
+                renderer.color,
+                Is.EqualTo(new Color(0.30f, 0.75f, 0.55f)),
+                "采集站建成后应显示专属青绿色");
+
+            var remaining = loop.Map.GetTile(resourcePos.Value).ResourceAmount;
+            for (var i = 0; i < remaining; i++)
+            {
+                Assert.That(
+                    CollectService.TryCollect(loop.Map, loop.Pool, resourcePos.Value),
+                    Is.True,
+                    "采集中应持续成功");
+            }
+
+            Assert.That(
+                loop.Map.GetTile(resourcePos.Value).Terrain,
+                Is.EqualTo(TerrainType.Grass),
+                "资源采空后地形应变为草地");
+            Assert.That(
+                loop.Map.GetTile(resourcePos.Value).Building,
+                Is.EqualTo(BuildingType.Collector),
+                "资源采空不应移除建筑");
+            Assert.That(
+                renderer.color,
+                Is.EqualTo(new Color(0.30f, 0.75f, 0.55f)),
+                "TerrainChanged 不应覆盖采集站的建筑颜色");
+        }
+
+        [UnityTest]
         public IEnumerator BuildMenu_AllButtonsVisibleOnScreen()
         {
             yield return null;

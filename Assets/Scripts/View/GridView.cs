@@ -87,7 +87,10 @@ namespace ShengXi.View
         {
             if (_tiles.TryGetValue(pos, out var renderer))
             {
-                renderer.color = ColorFor(terrain);
+                // 资源采空会广播 TerrainChanged，但格子上可能仍有采集站。
+                // 颜色必须继续遵循「建筑 > 地形」，否则建筑只剩血条可见。
+                var tile = _map != null ? _map.GetTile(pos) : null;
+                renderer.color = tile != null ? ColorForTile(tile) : ColorFor(terrain);
             }
         }
 
